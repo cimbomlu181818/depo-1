@@ -1,0 +1,193 @@
+﻿<Window x:Class="DepoStok.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Depo Stok Yönetimi"
+        Height="600" Width="1000"
+        MinHeight="500" MinWidth="800"
+        WindowStartupLocation="CenterScreen">
+
+    <DockPanel>
+
+        <!-- ÜST MENÜ (her pencerede görünecek) -->
+        <Menu DockPanel.Dock="Top" Padding="4">
+            <MenuItem Header="Ana Sayfa" Click="HomeMenu_Click" />
+            <MenuItem Header="Ayarlar" Click="SettingsMenu_Click" />
+            <MenuItem Header="Yedekleme" />
+            <MenuItem Header="Yardım" />
+        </Menu>
+
+        <!-- MENÜNÜN ALTINDAKİ ALAN: iki sayfa üst üste durur, biri görünür -->
+        <Grid>
+
+            <!-- SAYFA 1: ANA SAYFA -->
+            <Grid x:Name="HomePage">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="250" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- SOL BÖLÜM -->
+                <DockPanel Grid.Column="0" Margin="10">
+
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="Seri No ara"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,5" />
+
+                    <TextBox DockPanel.Dock="Top"
+                             Height="28"
+                             VerticalContentAlignment="Center"
+                             Margin="0,0,0,12" />
+
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="Ürün cinsleri (açmak için çift tıklayın)"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,5" />
+
+                    <ListBox x:Name="ProductTypeList"
+                             MouseDoubleClick="ProductTypeList_MouseDoubleClick" />
+
+                </DockPanel>
+
+                <!-- ORTA BÖLÜM -->
+                <DockPanel Grid.Column="1" Margin="0,10,10,10">
+
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="Son işlem yapılan cihazlar"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,5" />
+
+                    <Border BorderBrush="Gray" BorderThickness="1">
+                        <TextBlock Text="Son işlem yapılan cihazlar burada listelenecek."
+                                   Foreground="Gray"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                    </Border>
+
+                </DockPanel>
+            </Grid>
+
+            <!-- SAYFA 2: ÜRÜN TİPİ SAYFASI -->
+            <Grid x:Name="TypePage" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="250" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- SOL BÖLÜM: iki mod var, biri görünür -->
+                <Grid Grid.Column="0">
+
+                    <!-- MOD 1: NORMAL BAR (geri + Seri No arama + düğmeler) -->
+                    <StackPanel x:Name="NormalLeftPanel" Margin="10">
+
+                        <Button Content="← Geri"
+                                Height="30"
+                                HorizontalAlignment="Left"
+                                Width="80"
+                                Margin="0,0,0,15"
+                                Click="BackButton_Click" />
+
+                        <TextBlock Text="Seri No ara"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,5" />
+
+                        <TextBox x:Name="TypeSerialSearchBox"
+                                 Height="28"
+                                 VerticalContentAlignment="Center"
+                                 Margin="0,0,0,4"
+                                 TextChanged="TypeSerialSearchBox_TextChanged" />
+
+                        <TextBlock x:Name="SerialSearchHint"
+                                   Foreground="Gray"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,15" />
+
+                        <Button Content="Ürün Ekle"
+                                Height="32"
+                                Margin="0,0,0,8"
+                                Click="AddProductButton_Click" />
+
+                        <Button Content="Sil"
+                                Height="32"
+                                Margin="0,0,0,8"
+                                Click="DeleteButton_Click" />
+
+                        <Button Content="Hurdaya Taşı"
+                                Height="32"
+                                Margin="0,0,0,8"
+                                Click="ScrapButton_Click" />
+
+                        <Button x:Name="FilterButton"
+                                Content="Filtrele"
+                                Height="32"
+                                Margin="0,0,0,8"
+                                Click="FilterButton_Click" />
+
+                    </StackPanel>
+
+                    <!-- MOD 2: FİLTRE BARI (üstte geri, altında filtre öğeleri) -->
+                    <DockPanel x:Name="FilterLeftPanel"
+                               Margin="10"
+                               Visibility="Collapsed">
+
+                        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+
+                            <Button Content="← Geri"
+                                    Height="30"
+                                    HorizontalAlignment="Left"
+                                    Width="80"
+                                    Margin="0,0,0,10"
+                                    Click="FilterBackButton_Click" />
+
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right"
+                                        Content="Temizle"
+                                        Width="70"
+                                        Click="ClearFiltersButton_Click" />
+                                <TextBlock Text="Filtreler"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center" />
+                            </DockPanel>
+
+                        </StackPanel>
+
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="FilterItemsPanel" />
+                        </ScrollViewer>
+
+                    </DockPanel>
+
+                </Grid>
+
+                <!-- ORTA BÖLÜM: Excel görünümü -->
+                <DockPanel Grid.Column="1" Margin="0,10,10,10">
+
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <TextBlock x:Name="ProductCountText"
+                                   DockPanel.Dock="Right"
+                                   Foreground="Gray"
+                                   VerticalAlignment="Center" />
+                        <TextBlock x:Name="TypePageTitle"
+                                   FontSize="16"
+                                   FontWeight="SemiBold" />
+                    </DockPanel>
+
+                    <DataGrid x:Name="ProductGrid"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              CanUserSortColumns="False"
+                              CanUserReorderColumns="False"
+                              FrozenColumnCount="2"
+                              SelectionUnit="FullRow"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="All" />
+
+                </DockPanel>
+            </Grid>
+
+        </Grid>
+    </DockPanel>
+
+</Window>

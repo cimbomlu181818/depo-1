@@ -1,0 +1,66 @@
+﻿<Window x:Class="DepoStok.ProductDetailWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ürün detayı"
+        Height="480" Width="500"
+        MinHeight="320" MinWidth="400"
+        WindowStartupLocation="CenterOwner">
+
+    <DockPanel Margin="15">
+
+        <!-- ALT: HURDAYA AYIR + DÜĞMELER -->
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,15,0,0">
+
+            <CheckBox x:Name="ScrapCheck"
+                      Content="Hurdaya ayır"
+                      Margin="0,0,0,12"
+                      Click="ScrapCheck_Click" />
+
+            <DockPanel>
+
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="SaveButton"
+                            Content="Kaydet"
+                            Width="90" Height="30"
+                            Margin="0,0,8,0"
+                            Visibility="Collapsed"
+                            Click="SaveButton_Click" />
+                    <Button x:Name="CancelEditButton"
+                            Content="Vazgeç"
+                            Width="90" Height="30"
+                            Visibility="Collapsed"
+                            Click="CancelEditButton_Click" />
+                    <Button x:Name="CloseButton"
+                            Content="Kapat"
+                            Width="90" Height="30"
+                            IsCancel="True" />
+                </StackPanel>
+
+                <Button x:Name="EditButton"
+                        Content="Düzenle"
+                        Width="90" Height="30"
+                        HorizontalAlignment="Left"
+                        Click="EditButton_Click" />
+
+            </DockPanel>
+        </StackPanel>
+
+        <TextBlock x:Name="TitleText"
+                   DockPanel.Dock="Top"
+                   FontSize="15"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,2" />
+
+        <TextBlock x:Name="StatusText"
+                   DockPanel.Dock="Top"
+                   Foreground="Gray"
+                   Margin="0,0,0,10" />
+
+        <Border BorderBrush="Gray" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="DetailsPanel" Margin="10" />
+            </ScrollViewer>
+        </Border>
+
+    </DockPanel>
+</Window>

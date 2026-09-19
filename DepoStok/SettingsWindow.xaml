@@ -1,0 +1,152 @@
+﻿<Window x:Class="DepoStok.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ayarlar"
+        Height="560" Width="450"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner">
+
+    <TabControl Margin="10">
+
+        <!-- SEKME 1: ÜRÜN TİPLERİ -->
+        <TabItem Header="Ürün tipleri">
+            <DockPanel Margin="15">
+
+                <TextBlock DockPanel.Dock="Top"
+                           Text="Yeni ürün tipi"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,5" />
+
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,15">
+                    <Button DockPanel.Dock="Right"
+                            Content="Ekle"
+                            Width="80"
+                            Margin="8,0,0,0"
+                            Click="AddButton_Click" />
+                    <TextBox x:Name="TypeNameBox"
+                             Height="28"
+                             MaxLength="50"
+                             VerticalContentAlignment="Center" />
+                </DockPanel>
+
+                <TextBlock DockPanel.Dock="Top"
+                           Text="Kayıtlı ürün tipleri"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,5" />
+
+                <ListBox x:Name="TypeList" />
+
+            </DockPanel>
+        </TabItem>
+
+        <!-- SEKME 2: ALAN KÜTÜPHANESİ -->
+        <TabItem Header="Alan kütüphanesi">
+            <DockPanel Margin="15">
+
+                <TextBlock DockPanel.Dock="Top"
+                           Text="Yeni alan"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,5" />
+
+                <TextBox x:Name="PropertyNameBox"
+                         DockPanel.Dock="Top"
+                         Height="28"
+                         MaxLength="50"
+                         VerticalContentAlignment="Center"
+                         Margin="0,0,0,8" />
+
+                <ComboBox x:Name="DataTypeBox"
+                          DockPanel.Dock="Top"
+                          Height="28"
+                          SelectedIndex="0"
+                          VerticalContentAlignment="Center"
+                          Margin="0,0,0,8">
+                    <ComboBoxItem Content="Metin" Tag="Text" />
+                    <ComboBoxItem Content="Sayı" Tag="Number" />
+                    <ComboBoxItem Content="Tarih" Tag="Date" />
+                    <ComboBoxItem Content="Evet/Hayır" Tag="YesNo" />
+                </ComboBox>
+
+                <CheckBox x:Name="SerialNumberCheck"
+                          DockPanel.Dock="Top"
+                          Content="Bu alan seri numarasıdır"
+                          Margin="0,0,0,8" />
+
+                <Button DockPanel.Dock="Top"
+                        Content="Ekle"
+                        Width="80"
+                        HorizontalAlignment="Left"
+                        Margin="0,0,0,15"
+                        Click="AddPropertyButton_Click" />
+
+                <TextBlock DockPanel.Dock="Top"
+                           Text="Kayıtlı alanlar"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,5" />
+
+                <ListBox x:Name="PropertyList" />
+
+            </DockPanel>
+        </TabItem>
+
+        <!-- SEKME 3: TİP ALANLARI -->
+        <TabItem Header="Tip alanları">
+            <DockPanel Margin="15">
+
+                <TextBlock DockPanel.Dock="Top"
+                           Text="Ürün tipi seçin"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,5" />
+
+                <ComboBox x:Name="TypeSelectBox"
+                          DockPanel.Dock="Top"
+                          Height="28"
+                          VerticalContentAlignment="Center"
+                          Margin="0,0,0,15"
+                          SelectionChanged="TypeSelectBox_SelectionChanged" />
+
+                <TextBlock DockPanel.Dock="Top"
+                           Text="Bu tipe eklenecek alan"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,5" />
+
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,15">
+                    <Button DockPanel.Dock="Right"
+                            Content="Ekle"
+                            Width="80"
+                            Margin="8,0,0,0"
+                            Click="AssignPropertyButton_Click" />
+                    <ComboBox x:Name="PropertyToAddBox"
+                              Height="28"
+                              VerticalContentAlignment="Center" />
+                </DockPanel>
+
+                <TextBlock DockPanel.Dock="Top"
+                           Text="Bu tipin alanları"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,5" />
+
+                <ListBox x:Name="AssignedList" />
+
+            </DockPanel>
+        </TabItem>
+
+        <!-- SEKME 4: HURDA -->
+        <TabItem Header="Hurda">
+            <StackPanel Margin="15">
+
+                <TextBlock Text="Hurdaya taşınan ürünler ayrı bir ekranda görünür. Oradan ürünleri normal listeye geri alabilirsiniz."
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,15" />
+
+                <Button Content="Hurda bölümünü aç"
+                        Width="160"
+                        Height="32"
+                        HorizontalAlignment="Left"
+                        Click="OpenScrapButton_Click" />
+
+            </StackPanel>
+        </TabItem>
+
+    </TabControl>
+</Window>
