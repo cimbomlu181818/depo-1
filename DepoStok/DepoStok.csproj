@@ -63,6 +63,7 @@
     <Compile Include="AddProductWindow.xaml.cs">
       <DependentUpon>AddProductWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Data\BackupService.cs" />
     <Compile Include="Data\ProductArchiveRepository.cs" />
     <Compile Include="Data\ProductListRepository.cs" />
     <Compile Include="Data\ProductRepository.cs" />

@@ -676,6 +676,127 @@ namespace DepoStok
             TypeSerialSearchBox.Text = serial;
         }
 
+        // ---------- YEDEKLEME ----------
+
+        /// <summary>
+        /// Menüden "Yedek al" seçilince: kaydedilecek yeri sorar ve veritabanının yedeğini alır.
+        /// </summary>
+        private void BackupMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "Yedek dosyasını kaydet",
+                FileName = BackupService.SuggestedFileName(),
+                DefaultExt = ".db",
+                Filter = "Depo Stok yedeği (*.db)|*.db",
+                OverwritePrompt = true
+            };
+
+            if (dialog.ShowDialog(this) != true)
+            {
+                return;
+            }
+
+            if (SamePath(dialog.FileName, Database.DatabasePath))
+            {
+                MessageBox.Show(this,
+                    "Yedek, programın kullandığı veritabanı dosyasının üzerine kaydedilemez.\nLütfen başka bir yer veya ad seçin.",
+                    "Uyarı", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                BackupService.CreateBackup(dialog.FileName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Yedek alınamadı:\n" + ex.Message, "Hata",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            MessageBox.Show(this, "Yedek alındı:\n" + dialog.FileName, "Bilgi",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        /// <summary>
+        /// Menüden "Yedekten geri yükle" seçilince: yedek dosyasını seçtirir, denetler,
+        /// onay alır ve tüm veriyi yedektekiyle değiştirir.
+        /// </summary>
+        private void RestoreMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Geri yüklenecek yedek dosyasını seçin",
+                Filter = "Depo Stok yedeği (*.db)|*.db",
+                CheckFileExists = true
+            };
+
+            if (dialog.ShowDialog(this) != true)
+            {
+                return;
+            }
+
+            if (SamePath(dialog.FileName, Database.DatabasePath))
+            {
+                MessageBox.Show(this,
+                    "Programın şu an kullandığı veritabanı dosyasını seçemezsiniz.\nLütfen aldığınız bir yedek dosyasını seçin.",
+                    "Uyarı", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string problem = BackupService.CheckBackupFile(dialog.FileName);
+
+            if (problem != null)
+            {
+                MessageBox.Show(this, problem, "Uyarı",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var answer = MessageBox.Show(this,
+                "Şu anki tüm veriler, seçilen yedekteki verilerle değiştirilecek.\n\n" +
+                "Devam etmeden önce şu anki verinin otomatik bir kopyası alınacak.\n\n" +
+                "Onaylıyor musun?",
+                "Onay", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (answer != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            string safetyCopy;
+
+            try
+            {
+                safetyCopy = BackupService.RestoreBackup(dialog.FileName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Yedek geri yüklenemedi:\n" + ex.Message, "Hata",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            ShowHome();
+
+            MessageBox.Show(this,
+                "Yedek geri yüklendi.\n\nÖnceki verinizin kopyası:\n" + safetyCopy,
+                "Bilgi", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        /// <summary>
+        /// İki dosya yolu aynı dosyayı gösteriyor mu?
+        /// </summary>
+        private static bool SamePath(string first, string second)
+        {
+            return string.Equals(
+                System.IO.Path.GetFullPath(first),
+                System.IO.Path.GetFullPath(second),
+                StringComparison.OrdinalIgnoreCase);
+        }
+
         // ---------- MENÜ VE DÜĞMELER ----------
 
         private void HomeMenu_Click(object sender, RoutedEventArgs e)

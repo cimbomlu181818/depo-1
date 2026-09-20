@@ -12,7 +12,10 @@
         <Menu DockPanel.Dock="Top" Padding="4">
             <MenuItem Header="Ana Sayfa" Click="HomeMenu_Click" />
             <MenuItem Header="Ayarlar" Click="SettingsMenu_Click" />
-            <MenuItem Header="Yedekleme" />
+            <MenuItem Header="Yedekleme">
+                <MenuItem Header="Yedek al..." Click="BackupMenu_Click" />
+                <MenuItem Header="Yedekten geri yükle..." Click="RestoreMenu_Click" />
+            </MenuItem>
             <MenuItem Header="Yardım" />
         </Menu>
 
