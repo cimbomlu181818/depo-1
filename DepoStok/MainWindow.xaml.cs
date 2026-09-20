@@ -613,6 +613,69 @@ namespace DepoStok
             return result.ToString();
         }
 
+        // ---------- ANA SAYFADA SERİ NO ARAMA ----------
+
+        private void HomeSerialSearchBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                SearchSerialFromHome();
+            }
+        }
+
+        private void HomeSerialSearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            SearchSerialFromHome();
+        }
+
+        /// <summary>
+        /// Ana sayfadaki kutuya yazılan seri numarasını tüm ürün tiplerinde arar.
+        /// Bulursa ürünün tipinin sayfasını açar ve seri numarasını o sayfanın arama kutusuna yazar.
+        /// Birden fazla eşleşme varsa tam eşleşen öne alınır.
+        /// </summary>
+        private void SearchSerialFromHome()
+        {
+            string serial = HomeSerialSearchBox.Text.Trim();
+
+            if (serial.Length == 0)
+            {
+                MessageBox.Show("Lütfen aranacak seri numarasını yazın.", "Uyarı",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            long? typeId;
+
+            try
+            {
+                typeId = SerialSearchRepository.FindTypeIdBySerial(serial);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Arama yapılamadı:\n" + ex.Message, "Hata",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            ProductType type = null;
+
+            if (typeId.HasValue)
+            {
+                type = ProductTypeRepository.GetAll().FirstOrDefault(t => t.Id == typeId.Value);
+            }
+
+            if (type == null)
+            {
+                MessageBox.Show("Bu seri numarasını içeren ürün bulunamadı.", "Bilgi",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            HomeSerialSearchBox.Clear();
+            ShowTypePage(type);
+            TypeSerialSearchBox.Text = serial;
+        }
+
         // ---------- MENÜ VE DÜĞMELER ----------
 
         private void HomeMenu_Click(object sender, RoutedEventArgs e)

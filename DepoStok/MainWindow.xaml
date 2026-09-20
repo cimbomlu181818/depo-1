@@ -34,10 +34,17 @@
                                FontWeight="SemiBold"
                                Margin="0,0,0,5" />
 
-                    <TextBox DockPanel.Dock="Top"
-                             Height="28"
-                             VerticalContentAlignment="Center"
-                             Margin="0,0,0,12" />
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                        <Button DockPanel.Dock="Right"
+                                Content="Ara"
+                                Width="50"
+                                Margin="6,0,0,0"
+                                Click="HomeSerialSearchButton_Click" />
+                        <TextBox x:Name="HomeSerialSearchBox"
+                                 Height="28"
+                                 VerticalContentAlignment="Center"
+                                 KeyDown="HomeSerialSearchBox_KeyDown" />
+                    </DockPanel>
 
                     <TextBlock DockPanel.Dock="Top"
                                Text="Ürün cinsleri (açmak için çift tıklayın)"
