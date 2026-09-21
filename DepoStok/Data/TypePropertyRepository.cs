@@ -82,5 +82,23 @@ namespace DepoStok.Data
                 }
             }
         }
+
+        /// <summary>
+        /// Bir alanı ürün tipinden çıkarır (arşive alır).
+        /// Ürünlerdeki değerler silinmez. Alan tipe tekrar eklenirse değerler geri gelir.
+        /// </summary>
+        public static void RemoveFromType(long productTypeId, long propertyId)
+        {
+            using (var connection = Database.OpenConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText =
+                    "UPDATE TypeProperties SET IsArchived = 1 " +
+                    "WHERE ProductTypeId = @typeId AND PropertyId = @propertyId;";
+                command.Parameters.AddWithValue("@typeId", productTypeId);
+                command.Parameters.AddWithValue("@propertyId", propertyId);
+                command.ExecuteNonQuery();
+            }
+        }
     }
 }

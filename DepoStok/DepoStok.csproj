@@ -66,13 +66,18 @@
     <Compile Include="ArchiveWindow.xaml.cs">
       <DependentUpon>ArchiveWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="BulkFillWindow.xaml.cs">
+      <DependentUpon>BulkFillWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Data\BackupService.cs" />
+    <Compile Include="Data\CsvExporter.cs" />
     <Compile Include="Data\LogRepository.cs" />
     <Compile Include="Data\ProductArchiveRepository.cs" />
     <Compile Include="Data\ProductListRepository.cs" />
     <Compile Include="Data\ProductRepository.cs" />
     <Compile Include="Data\PropertyDefinitionRepository.cs" />
     <Compile Include="Data\RecentProductsRepository.cs" />
+    <Compile Include="Data\RenameRepository.cs" />
     <Compile Include="Data\SerialSearchRepository.cs" />
     <Compile Include="Data\TypePropertyRepository.cs" />
     <Compile Include="DeleteProductsWindow.xaml.cs">
@@ -83,6 +88,9 @@
     </Compile>
     <Compile Include="ProductDetailWindow.xaml.cs">
       <DependentUpon>ProductDetailWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="RenameWindow.xaml.cs">
+      <DependentUpon>RenameWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="ScrapWindow.xaml.cs">
       <DependentUpon>ScrapWindow.xaml</DependentUpon>
@@ -95,6 +103,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="ArchiveWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="BulkFillWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -121,6 +133,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="ProductDetailWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="RenameWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

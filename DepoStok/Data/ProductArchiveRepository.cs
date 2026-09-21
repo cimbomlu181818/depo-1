@@ -92,8 +92,8 @@ namespace DepoStok.Data
                     command.Parameters.AddWithValue("@userName", Environment.UserName);
                     command.Parameters.AddWithValue("@action", actionText);
                     command.Parameters.AddWithValue("@details",
-                        "Ürün no: " + string.Join(", ", productIds) +
-                        " (ürün tipi no: " + productTypeId + ")");
+                        LogRepository.DescribeProducts(
+                            connection, transaction, productTypeId, productIds));
                     command.ExecuteNonQuery();
                 }
 

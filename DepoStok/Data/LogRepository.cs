@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Globalization;
+using System.Linq;
 
 namespace DepoStok.Data
 {
@@ -44,6 +45,70 @@ namespace DepoStok.Data
                 command.Parameters.AddWithValue("@details", details);
                 command.ExecuteNonQuery();
             }
+        }
+
+        /// <summary>
+        /// Log için ürünleri okunur bir yazıya çevirir.
+        /// Örnek: "Bilgisayar, Seri No: ABC123 (ürün no: 4)".
+        /// Seri numarası yoksa: "Telsiz (ürün no: 7)". En fazla 10 ürün yazılır.
+        /// Ürün işlemiyle aynı bağlantı ve işlem (transaction) içinde çağrılmalıdır.
+        /// </summary>
+        public static string DescribeProducts(
+            SQLiteConnection connection,
+            SQLiteTransaction transaction,
+            long productTypeId,
+            IList<long> productIds)
+        {
+            string typeName = null;
+
+            using (var command = connection.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText = "SELECT Name FROM ProductTypes WHERE Id = @id;";
+                command.Parameters.AddWithValue("@id", productTypeId);
+
+                object result = command.ExecuteScalar();
+                typeName = result == null ? "ürün tipi no: " + productTypeId : Convert.ToString(result);
+            }
+
+            var parts = new List<string>();
+
+            foreach (long productId in productIds.Take(10))
+            {
+                using (var command = connection.CreateCommand())
+                {
+                    command.Transaction = transaction;
+                    command.CommandText =
+                        "SELECT d.Name, v.TextValue " +
+                        "FROM ProductValues v " +
+                        "JOIN PropertyDefinitions d ON d.Id = v.PropertyId " +
+                        "WHERE v.ProductId = @productId AND d.IsSerialNumber = 1 " +
+                        "LIMIT 1;";
+                    command.Parameters.AddWithValue("@productId", productId);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read() && !reader.IsDBNull(1))
+                        {
+                            parts.Add(typeName + ", " + reader.GetString(0) + ": " +
+                                      reader.GetString(1) + " (ürün no: " + productId + ")");
+                        }
+                        else
+                        {
+                            parts.Add(typeName + " (ürün no: " + productId + ")");
+                        }
+                    }
+                }
+            }
+
+            string text = string.Join("; ", parts);
+
+            if (productIds.Count > 10)
+            {
+                text += "; ve " + (productIds.Count - 10) + " ürün daha";
+            }
+
+            return text;
         }
 
         /// <summary>

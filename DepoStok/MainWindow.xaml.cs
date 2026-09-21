@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 using DepoStok.Data;
 
 namespace DepoStok
@@ -183,11 +184,14 @@ namespace DepoStok
 
             foreach (var property in properties)
             {
+                string columnName = ProductListRepository.ColumnNameFor(property.Id);
+
                 ProductGrid.Columns.Add(new DataGridTextColumn
                 {
                     Header = property.Name,
-                    Binding = new Binding(ProductListRepository.ColumnNameFor(property.Id)),
-                    Width = new DataGridLength(140)
+                    Binding = new Binding(columnName),
+                    Width = new DataGridLength(140),
+                    CellStyle = CreateEmptyCellStyle(columnName)
                 });
             }
 
@@ -195,6 +199,61 @@ namespace DepoStok
 
             BuildFilterPanel(table, properties);
             ApplyFilters();
+        }
+
+        /// <summary>
+        /// Boş hücreleri açık sarıya boyayan bir hücre stili oluşturur.
+        /// Sonradan eklenen bir alanın eski ürünlerde boş kaldığı yerler böylece kolayca görülür.
+        /// </summary>
+        private static Style CreateEmptyCellStyle(string columnName)
+        {
+            var style = new Style(typeof(DataGridCell));
+
+            var emptyTrigger = new DataTrigger
+            {
+                Binding = new Binding(columnName) { Converter = new EmptyToBooleanConverter() },
+                Value = true
+            };
+            emptyTrigger.Setters.Add(new Setter(
+                Control.BackgroundProperty,
+                new SolidColorBrush(Color.FromRgb(255, 248, 210))));
+            style.Triggers.Add(emptyTrigger);
+
+            // Satır seçilince normal seçim rengi görünsün.
+            var selectedTrigger = new Trigger
+            {
+                Property = DataGridCell.IsSelectedProperty,
+                Value = true
+            };
+            selectedTrigger.Setters.Add(new Setter(
+                Control.BackgroundProperty, SystemColors.HighlightBrush));
+            selectedTrigger.Setters.Add(new Setter(
+                Control.ForegroundProperty, SystemColors.HighlightTextBrush));
+            style.Triggers.Add(selectedTrigger);
+
+            return style;
+        }
+
+        /// <summary>
+        /// Hücre boşsa (hiç değer yoksa ya da yazı boşsa) "doğru" verir.
+        /// </summary>
+        private class EmptyToBooleanConverter : IValueConverter
+        {
+            public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+            {
+                if (value == null || value == DBNull.Value)
+                {
+                    return true;
+                }
+
+                var text = value as string;
+                return text != null && text.Length == 0;
+            }
+
+            public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            {
+                throw new NotSupportedException();
+            }
         }
 
         // ---------- ÜRÜN DETAYI ----------
@@ -700,6 +759,218 @@ namespace DepoStok
             var historyWindow = new HistoryWindow();
             historyWindow.Owner = this;
             historyWindow.ShowDialog();
+        }
+
+        // ---------- ARŞİV ----------
+
+        /// <summary>
+        /// Menüden Arşiv'e tıklanınca silinen ürünlerin penceresini açar.
+        /// Pencere kapanınca, geri alınan ürünler görünsün diye açık sayfa yenilenir.
+        /// </summary>
+        private void ArchiveMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var archiveWindow = new ArchiveWindow();
+            archiveWindow.Owner = this;
+            archiveWindow.ShowDialog();
+
+            if (_currentType == null)
+            {
+                ShowHome();
+            }
+            else
+            {
+                LoadProducts();
+            }
+        }
+
+        // ---------- BOŞ ALANLARI TOPLU DOLDURMA ----------
+
+        /// <summary>
+        /// "Boş Alanları Doldur" düğmesi: kapsamdaki ürünlerin boş bir alanını aynı değerle doldurur.
+        /// Kapsam: onay kutusu işaretli ürünler varsa onlar, yoksa ekranda görünen (filtrelenmiş) tüm ürünler.
+        /// </summary>
+        private void BulkFillButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentType == null)
+            {
+                return;
+            }
+
+            var view = ProductGrid.ItemsSource as DataView;
+
+            if (view == null || view.Count == 0)
+            {
+                MessageBox.Show(this, "Listede ürün yok.", "Bilgi",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Seri numarası alanı toplu doldurulamaz, çünkü her ürünün seri numarası farklı olmalı.
+            List<PropertyDefinition> fillable = _currentProperties
+                .Where(p => !p.IsSerialNumber)
+                .ToList();
+
+            if (fillable.Count == 0)
+            {
+                MessageBox.Show(this, "Bu tipte toplu doldurulabilecek alan yok.", "Bilgi",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var visibleRows = new List<DataRowView>();
+            var checkedRows = new List<DataRowView>();
+
+            foreach (DataRowView rowView in view)
+            {
+                visibleRows.Add(rowView);
+
+                if ((bool)rowView[SelectedColumn])
+                {
+                    checkedRows.Add(rowView);
+                }
+            }
+
+            List<DataRowView> scope = checkedRows.Count > 0 ? checkedRows : visibleRows;
+
+            string scopeText = checkedRows.Count > 0
+                ? "Kapsam: işaretli " + checkedRows.Count + " ürün"
+                : "Kapsam: ekranda görünen " + visibleRows.Count + " ürün (işaretli ürün yok)";
+
+            List<long> productIds = scope
+                .Select(r => (long)r[ProductListRepository.IdColumn])
+                .ToList();
+
+            // Bir alanın kapsamda kaç üründe boş olduğunu sayar.
+            Func<PropertyDefinition, int> countEmpty = property =>
+            {
+                string column = ProductListRepository.ColumnNameFor(property.Id);
+                return scope.Count(r => string.IsNullOrEmpty(Convert.ToString(r[column])));
+            };
+
+            var window = new BulkFillWindow(_currentType, scopeText, fillable, productIds, countEmpty);
+            window.Owner = this;
+
+            if (window.ShowDialog() == true)
+            {
+                LoadProducts();
+
+                MessageBox.Show(this,
+                    window.FilledCount + " ürünün boş alanı dolduruldu.",
+                    "Bilgi", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        // ---------- DIŞA AKTARMA ----------
+
+        /// <summary>
+        /// Ürün tipi sayfasında şu an ekranda görünen ürünleri (filtre varsa filtrelenmiş halini)
+        /// Excel'de açılabilen bir CSV dosyasına yazar.
+        /// </summary>
+        private void ExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentType == null)
+            {
+                return;
+            }
+
+            var view = ProductGrid.ItemsSource as DataView;
+
+            if (view == null || view.Count == 0)
+            {
+                MessageBox.Show(this, "Dışa aktarılacak ürün yok.", "Bilgi",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Onay kutusu sütunu hariç, tablodaki sütunların başlıklarını ve veri adlarını topla.
+            var headers = new List<string>();
+            var paths = new List<string>();
+
+            foreach (DataGridBoundColumn column in ProductGrid.Columns.OfType<DataGridBoundColumn>())
+            {
+                var binding = column.Binding as Binding;
+
+                if (binding == null)
+                {
+                    continue;
+                }
+
+                headers.Add(Convert.ToString(column.Header));
+                paths.Add(binding.Path.Path);
+            }
+
+            var rows = new List<IList<string>>();
+
+            foreach (DataRowView rowView in view)
+            {
+                var cells = new List<string>();
+
+                foreach (string path in paths)
+                {
+                    object value = rowView[path];
+                    cells.Add(value == null || value == DBNull.Value ? "" : Convert.ToString(value));
+                }
+
+                rows.Add(cells);
+            }
+
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "Dışa aktarılacak dosyayı kaydet",
+                FileName = MakeSafeFileName(_currentType.Name) + "-" +
+                           DateTime.Now.ToString("yyyy-MM-dd") + ".csv",
+                DefaultExt = ".csv",
+                Filter = "Excel için CSV dosyası (*.csv)|*.csv",
+                OverwritePrompt = true
+            };
+
+            if (dialog.ShowDialog(this) != true)
+            {
+                return;
+            }
+
+            try
+            {
+                CsvExporter.Write(dialog.FileName, headers, rows);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this,
+                    "Dosya yazılamadı:\n" + ex.Message +
+                    "\n\nDosya Excel'de açıksa önce onu kapatın.",
+                    "Hata", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            string logWarning = "";
+
+            try
+            {
+                LogRepository.Write("Dışa aktarıldı",
+                    "Ürün tipi: " + _currentType.Name + ", " + rows.Count + " ürün, dosya: " +
+                    System.IO.Path.GetFileName(dialog.FileName));
+            }
+            catch (Exception ex)
+            {
+                logWarning = "\n\n(İşlem loguna yazılamadı: " + ex.Message + ")";
+            }
+
+            MessageBox.Show(this,
+                rows.Count + " ürün dışa aktarıldı:\n" + dialog.FileName + logWarning,
+                "Bilgi", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        /// <summary>
+        /// Dosya adında kullanılamayan karakterleri "_" ile değiştirir.
+        /// </summary>
+        private static string MakeSafeFileName(string name)
+        {
+            foreach (char invalid in System.IO.Path.GetInvalidFileNameChars())
+            {
+                name = name.Replace(invalid, '_');
+            }
+
+            return name;
         }
 
         // ---------- YEDEKLEME ----------

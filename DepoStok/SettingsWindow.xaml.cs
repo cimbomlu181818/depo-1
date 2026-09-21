@@ -21,7 +21,7 @@ namespace DepoStok
 
         private void RefreshTypeList()
         {
-            TypeList.ItemsSource = ProductTypeRepository.GetNames();
+            TypeList.ItemsSource = ProductTypeRepository.GetAll();
         }
 
         private void RefreshPropertyList()
@@ -213,6 +213,64 @@ namespace DepoStok
             RefreshAssignedArea();
         }
 
+        /// <summary>
+        /// Listede seçili alanı, seçili ürün tipinden çıkarır (arşive alır).
+        /// Ürünlerdeki değerler silinmez; alan tipe tekrar eklenirse geri gelir.
+        /// </summary>
+        private void RemoveAssignedButton_Click(object sender, RoutedEventArgs e)
+        {
+            var type = TypeSelectBox.SelectedItem as ProductType;
+            if (type == null)
+            {
+                ShowWarning("Önce ürün tipini seçin.");
+                return;
+            }
+
+            var property = AssignedList.SelectedItem as PropertyDefinition;
+            if (property == null)
+            {
+                ShowWarning("Listeden tipten çıkarılacak alanı seçin.");
+                return;
+            }
+
+            string message =
+                "\"" + property.Name + "\" alanı \"" + type.Name + "\" tipinden çıkarılacak.\n\n" +
+                "Ürünlerdeki değerler silinmez, sadece gizlenir. " +
+                "Alanı tipe tekrar eklerseniz değerler geri gelir.\n\n";
+
+            if (property.IsSerialNumber)
+            {
+                message +=
+                    "Dikkat: Bu bir seri numarası alanı. Çıkarırsanız bu tipteki ürünler " +
+                    "seri numarasız (adet bazlı) davranır.\n\n";
+            }
+
+            message += "Onaylıyor musunuz?";
+
+            MessageBoxResult answer = MessageBox.Show(message, "Onay",
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (answer != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                TypePropertyRepository.RemoveFromType(type.Id, property.Id);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Alan tipten çıkarılamadı:\n" + ex.Message);
+                return;
+            }
+
+            WriteLog("Alan tipten çıkarıldı",
+                "Ürün tipi: " + type.Name + ", alan: " + property.Name);
+
+            RefreshAssignedArea();
+        }
+
         // ---------- HURDA SEKMESİ ----------
 
         /// <summary>
@@ -223,6 +281,106 @@ namespace DepoStok
             var scrapWindow = new ScrapWindow();
             scrapWindow.Owner = this;
             scrapWindow.ShowDialog();
+        }
+
+        // ---------- ADI DEĞİŞTİRME ----------
+
+        /// <summary>
+        /// Ürün tipleri listesinde seçili tipin adını değiştirir.
+        /// </summary>
+        private void RenameTypeButton_Click(object sender, RoutedEventArgs e)
+        {
+            var type = TypeList.SelectedItem as ProductType;
+
+            if (type == null)
+            {
+                ShowWarning("Listeden adını değiştireceğiniz ürün tipini seçin.");
+                return;
+            }
+
+            var turkish = new CultureInfo("tr-TR");
+
+            var window = new RenameWindow(
+                "Ürün tipi: " + type.Name,
+                type.Name,
+                newName =>
+                {
+                    bool taken = ProductTypeRepository.GetAll().Any(t =>
+                        t.Id != type.Id &&
+                        string.Compare(t.Name, newName, turkish, CompareOptions.IgnoreCase) == 0);
+
+                    return taken ? "Bu adda başka bir ürün tipi zaten var." : null;
+                });
+            window.Owner = this;
+
+            if (window.ShowDialog() != true || window.NewName == type.Name)
+            {
+                return;
+            }
+
+            try
+            {
+                RenameRepository.RenameProductType(type.Id, window.NewName);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Ad değiştirilemedi:\n" + ex.Message);
+                return;
+            }
+
+            WriteLog("Ürün tipi adı değiştirildi", type.Name + " → " + window.NewName);
+
+            RefreshTypeList();
+            RefreshAssignTab();
+        }
+
+        /// <summary>
+        /// Alan kütüphanesinde seçili alanın adını değiştirir.
+        /// </summary>
+        private void RenamePropertyButton_Click(object sender, RoutedEventArgs e)
+        {
+            var property = PropertyList.SelectedItem as PropertyDefinition;
+
+            if (property == null)
+            {
+                ShowWarning("Listeden adını değiştireceğiniz alanı seçin.");
+                return;
+            }
+
+            var turkish = new CultureInfo("tr-TR");
+
+            var window = new RenameWindow(
+                "Alan: " + property.Name,
+                property.Name,
+                newName =>
+                {
+                    bool taken = PropertyDefinitionRepository.GetAll().Any(p =>
+                        p.Id != property.Id &&
+                        string.Compare(p.Name, newName, turkish, CompareOptions.IgnoreCase) == 0);
+
+                    return taken ? "Bu adda başka bir alan zaten var." : null;
+                });
+            window.Owner = this;
+
+            if (window.ShowDialog() != true || window.NewName == property.Name)
+            {
+                return;
+            }
+
+            try
+            {
+                RenameRepository.RenameProperty(property.Id, window.NewName);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Ad değiştirilemedi:\n" + ex.Message);
+                return;
+            }
+
+            WriteLog("Alan adı değiştirildi", property.Name + " → " + window.NewName);
+
+            RefreshPropertyList();
+            RefreshAssignTab();
         }
 
         // ---------- İŞLEM LOGU ----------

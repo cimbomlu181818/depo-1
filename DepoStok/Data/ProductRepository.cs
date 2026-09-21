@@ -189,7 +189,8 @@ namespace DepoStok.Data
                     command.Parameters.AddWithValue("@userName", Environment.UserName);
                     command.Parameters.AddWithValue("@action", "Ürün eklendi");
                     command.Parameters.AddWithValue("@details",
-                        "Ürün no: " + productId + ", ürün tipi no: " + productTypeId +
+                        LogRepository.DescribeProducts(
+                            connection, transaction, productTypeId, new List<long> { productId }) +
                         ", miktar: " + quantity);
                     command.ExecuteNonQuery();
                 }
@@ -280,13 +281,115 @@ namespace DepoStok.Data
                     command.Parameters.AddWithValue("@userName", Environment.UserName);
                     command.Parameters.AddWithValue("@action", "Ürün düzenlendi");
                     command.Parameters.AddWithValue("@details",
-                        "Ürün no: " + productId + " (ürün tipi no: " + productTypeId + "). " +
-                        string.Join("; ", logParts));
+                        LogRepository.DescribeProducts(
+                            connection, transaction, productTypeId, new List<long> { productId }) +
+                        ". " + string.Join("; ", logParts));
                     command.ExecuteNonQuery();
                 }
 
                 transaction.Commit();
             }
+        }
+
+        /// <summary>
+        /// Verilen ürünlerden, bu alanı boş olanlara aynı değeri yazar. Dolu olanlara dokunmaz.
+        /// Hepsi tek seferde yapılır: ya hepsi kaydolur ya da hiçbiri. İşlem loguna da yazılır.
+        /// Seri numarası alanı toplu doldurulamaz, çünkü her ürünün seri numarası farklı olmalıdır.
+        /// value veritabanına yazılacak hâl (Evet/Hayır için "1" ya da "0", tarih için "yyyy-MM-dd"),
+        /// displayValue ise loga yazılacak okunur hâldir.
+        /// Kaç ürünün doldurulduğunu verir.
+        /// </summary>
+        public static int FillEmptyValues(
+            long productTypeId,
+            PropertyDefinition property,
+            string value,
+            string displayValue,
+            List<long> productIds)
+        {
+            if (property.IsSerialNumber)
+            {
+                throw new InvalidOperationException("Seri numarası alanı toplu doldurulamaz.");
+            }
+
+            if (productIds == null || productIds.Count == 0)
+            {
+                return 0;
+            }
+
+            string now = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            int filled = 0;
+
+            using (var connection = Database.OpenConnection())
+            using (var transaction = connection.BeginTransaction())
+            {
+                foreach (long productId in productIds)
+                {
+                    using (var check = connection.CreateCommand())
+                    {
+                        check.Transaction = transaction;
+                        check.CommandText =
+                            "SELECT COUNT(*) FROM ProductValues " +
+                            "WHERE ProductId = @productId AND PropertyId = @propertyId;";
+                        check.Parameters.AddWithValue("@productId", productId);
+                        check.Parameters.AddWithValue("@propertyId", property.Id);
+
+                        if (Convert.ToInt64(check.ExecuteScalar()) > 0)
+                        {
+                            continue;
+                        }
+                    }
+
+                    InsertValue(connection, transaction, productId, productTypeId, property, value.Trim());
+
+                    using (var update = connection.CreateCommand())
+                    {
+                        update.Transaction = transaction;
+                        update.CommandText =
+                            "UPDATE Products SET UpdatedAt = @now " +
+                            "WHERE Id = @id AND ProductTypeId = @typeId;";
+                        update.Parameters.AddWithValue("@now", now);
+                        update.Parameters.AddWithValue("@id", productId);
+                        update.Parameters.AddWithValue("@typeId", productTypeId);
+                        update.ExecuteNonQuery();
+                    }
+
+                    filled++;
+                }
+
+                if (filled > 0)
+                {
+                    string typeName;
+
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.Transaction = transaction;
+                        command.CommandText = "SELECT Name FROM ProductTypes WHERE Id = @id;";
+                        command.Parameters.AddWithValue("@id", productTypeId);
+
+                        object result = command.ExecuteScalar();
+                        typeName = result == null ? "ürün tipi no: " + productTypeId : Convert.ToString(result);
+                    }
+
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.Transaction = transaction;
+                        command.CommandText =
+                            "INSERT INTO ActionLogs (CreatedAt, UserName, Action, Details) " +
+                            "VALUES (@createdAt, @userName, @action, @details);";
+                        command.Parameters.AddWithValue("@createdAt", now);
+                        command.Parameters.AddWithValue("@userName", Environment.UserName);
+                        command.Parameters.AddWithValue("@action", "Boş alanlar toplu dolduruldu");
+                        command.Parameters.AddWithValue("@details",
+                            "Ürün tipi: " + typeName + ", alan: " + property.Name +
+                            ", değer: " + displayValue + ", " + filled + " ürün");
+                        command.ExecuteNonQuery();
+                    }
+                }
+
+                transaction.Commit();
+            }
+
+            return filled;
         }
 
         /// <summary>
