@@ -1,0 +1,73 @@
+﻿<Window x:Class="DepoStok.ArchiveWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Arşiv (silinen ürünler)"
+        Height="560" Width="950"
+        MinHeight="400" MinWidth="700"
+        WindowStartupLocation="CenterOwner">
+
+    <DockPanel Margin="15">
+
+        <!-- ÜST: AÇIKLAMA -->
+        <TextBlock DockPanel.Dock="Top"
+                   Text="Silinen ürünler burada durur. Geri almak istediklerinin kutusunu işaretleyip &quot;Seçilenleri geri al&quot; düğmesine basın."
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,10" />
+
+        <!-- ALT: SAYI VE DÜĞMELER -->
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,15,0,0">
+            <Button DockPanel.Dock="Right"
+                    Content="Kapat"
+                    Width="90" Height="30"
+                    Margin="8,0,0,0"
+                    IsCancel="True" />
+            <Button x:Name="RestoreButton"
+                    DockPanel.Dock="Right"
+                    Content="Seçilenleri geri al"
+                    Width="150" Height="30"
+                    Click="RestoreButton_Click" />
+            <TextBlock x:Name="CountText"
+                       Foreground="Gray"
+                       VerticalAlignment="Center" />
+        </DockPanel>
+
+        <!-- ORTA: SİLİNEN ÜRÜNLER (en son silinen en üstte) -->
+        <DataGrid x:Name="ArchiveGrid"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserSortColumns="False"
+                  CanUserReorderColumns="False"
+                  HeadersVisibility="Column"
+                  GridLinesVisibility="All"
+                  SelectionUnit="FullRow">
+            <DataGrid.Columns>
+
+                <DataGridTemplateColumn Width="36">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsChecked, UpdateSourceTrigger=PropertyChanged}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="Silinme zamanı"
+                                    Binding="{Binding TimeText}"
+                                    Width="140" />
+                <DataGridTextColumn Header="Ürün tipi"
+                                    Binding="{Binding TypeName}"
+                                    Width="130" />
+                <DataGridTextColumn Header="Ürün"
+                                    Binding="{Binding Description}"
+                                    Width="*" />
+                <DataGridTextColumn Header="Durum"
+                                    Binding="{Binding ActionText}"
+                                    Width="150" />
+
+            </DataGrid.Columns>
+        </DataGrid>
+
+    </DockPanel>
+</Window>

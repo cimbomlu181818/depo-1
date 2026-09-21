@@ -61,6 +61,8 @@ namespace DepoStok
                 return;
             }
 
+            WriteLog("Ürün tipi eklendi", "Ad: " + name);
+
             TypeNameBox.Clear();
             RefreshTypeList();
             RefreshAssignTab();
@@ -116,6 +118,11 @@ namespace DepoStok
                 ShowError("Alan eklenemedi:\n" + ex.Message);
                 return;
             }
+
+            WriteLog("Alan eklendi",
+                "Ad: " + name +
+                ", tür: " + Convert.ToString(selectedItem.Content) +
+                (isSerialNumber ? ", seri numarası alanı" : ""));
 
             PropertyNameBox.Clear();
             DataTypeBox.SelectedIndex = 0;
@@ -200,6 +207,9 @@ namespace DepoStok
                 return;
             }
 
+            WriteLog("Alan tipe eklendi",
+                "Ürün tipi: " + type.Name + ", alan: " + property.Name);
+
             RefreshAssignedArea();
         }
 
@@ -213,6 +223,23 @@ namespace DepoStok
             var scrapWindow = new ScrapWindow();
             scrapWindow.Owner = this;
             scrapWindow.ShowDialog();
+        }
+
+        // ---------- İŞLEM LOGU ----------
+
+        /// <summary>
+        /// İşlemi loga yazar. Log yazılamazsa yapılan işlem geri alınmaz, sadece uyarı verilir.
+        /// </summary>
+        private void WriteLog(string action, string details)
+        {
+            try
+            {
+                LogRepository.Write(action, details);
+            }
+            catch (Exception ex)
+            {
+                ShowWarning("İşlem yapıldı ama işlem loguna yazılamadı:\n" + ex.Message);
+            }
         }
 
         // ---------- MESAJ KUTULARI ----------

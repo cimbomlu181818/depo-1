@@ -58,6 +58,20 @@ namespace DepoStok
             TypePage.Visibility = Visibility.Collapsed;
             HomePage.Visibility = Visibility.Visible;
             ProductTypeList.ItemsSource = ProductTypeRepository.GetAll();
+            LoadRecentProducts();
+        }
+
+        /// <summary>
+        /// Ana sayfanın ortasındaki "Son işlem yapılan cihazlar" tablosunu doldurur.
+        /// </summary>
+        private void LoadRecentProducts()
+        {
+            var recent = RecentProductsRepository.GetRecent(20);
+
+            RecentGrid.ItemsSource = recent;
+            RecentEmptyText.Visibility = recent.Count == 0
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
         /// <summary>
@@ -674,6 +688,18 @@ namespace DepoStok
             HomeSerialSearchBox.Clear();
             ShowTypePage(type);
             TypeSerialSearchBox.Text = serial;
+        }
+
+        // ---------- İŞLEM GEÇMİŞİ ----------
+
+        /// <summary>
+        /// Menüden İşlem Geçmişi'ne tıklanınca işlem geçmişi penceresini açar.
+        /// </summary>
+        private void HistoryMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var historyWindow = new HistoryWindow();
+            historyWindow.Owner = this;
+            historyWindow.ShowDialog();
         }
 
         // ---------- YEDEKLEME ----------

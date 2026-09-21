@@ -39,6 +39,16 @@ namespace DepoStok.Data
                 "IsScrap", 0, "Ürün hurdadan normal listeye alındı");
         }
 
+        /// <summary>
+        /// Silinmiş (arşive alınmış) ürünleri geri getirir ve işlem loguna yazar.
+        /// Ürün, silinmeden önceki yerine döner (normal listeye ya da hurdaya).
+        /// </summary>
+        public static void RestoreFromArchive(long productTypeId, List<long> productIds)
+        {
+            Change(productTypeId, productIds,
+                "IsArchived", 0, "Ürün arşivden geri alındı");
+        }
+
         private static void Change(
             long productTypeId,
             List<long> productIds,
