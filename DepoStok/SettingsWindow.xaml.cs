@@ -14,7 +14,9 @@ namespace DepoStok
         {
             InitializeComponent();
             RefreshTypeList();
+            RefreshArchivedTypeList();
             RefreshPropertyList();
+            RefreshDeletedPropertyList();
             RefreshAssignTab();
             TypeNameBox.Focus();
         }
@@ -24,9 +26,19 @@ namespace DepoStok
             TypeList.ItemsSource = ProductTypeRepository.GetAll();
         }
 
+        private void RefreshArchivedTypeList()
+        {
+            ArchivedTypeList.ItemsSource = ProductTypeRepository.GetArchived();
+        }
+
         private void RefreshPropertyList()
         {
             PropertyList.ItemsSource = PropertyDefinitionRepository.GetAll();
+        }
+
+        private void RefreshDeletedPropertyList()
+        {
+            DeletedPropertyList.ItemsSource = PropertyDefinitionRepository.GetArchived();
         }
 
         // ---------- ÜRÜN TİPLERİ SEKMESİ ----------
@@ -51,6 +63,21 @@ namespace DepoStok
                 return;
             }
 
+            string closeType = SimilarityHelper.FindClosestMatch(name, ProductTypeRepository.GetNames());
+
+            if (closeType != null)
+            {
+                MessageBoxResult confirm = MessageBox.Show(
+                    "\"" + closeType + "\" mi demek istediniz?\n\n" +
+                    "Yine de \"" + name + "\" adında yeni bir ürün tipi eklemek istiyor musunuz?",
+                    "Şunu mu demek istediniz?", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (confirm != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+            }
+
             try
             {
                 ProductTypeRepository.Add(name);
@@ -67,6 +94,87 @@ namespace DepoStok
             RefreshTypeList();
             RefreshAssignTab();
             TypeNameBox.Focus();
+        }
+
+        /// <summary>
+        /// Listede seçili ürün tipini arşive alır. Ürünlerine ve ayarlarına dokunulmaz,
+        /// yalnızca listelerde görünmez olur.
+        /// </summary>
+        private void ArchiveTypeButton_Click(object sender, RoutedEventArgs e)
+        {
+            var type = TypeList.SelectedItem as ProductType;
+
+            if (type == null)
+            {
+                ShowWarning("Listeden arşivlenecek ürün tipini seçin.");
+                return;
+            }
+
+            int activeProducts = ProductTypeRepository.CountActiveProducts(type.Id);
+
+            string message = "\"" + type.Name + "\" arşive alınacak. Listelerde görünmeyecek, " +
+                              "ama hiçbir şey silinmeyecek.";
+
+            if (activeProducts > 0)
+            {
+                message += "\n\nBu tipte " + activeProducts + " ürün var, onlar da birlikte gizlenir.";
+            }
+
+            message += "\n\nOnaylıyor musunuz?";
+
+            MessageBoxResult answer = MessageBox.Show(message, "Onay",
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (answer != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                ProductTypeRepository.Archive(type.Id);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Ürün tipi arşivlenemedi:\n" + ex.Message);
+                return;
+            }
+
+            WriteLog("Ürün tipi arşivlendi", "Ad: " + type.Name);
+
+            RefreshTypeList();
+            RefreshArchivedTypeList();
+            RefreshAssignTab();
+        }
+
+        /// <summary>
+        /// Arşivdeki listede seçili ürün tipini geri getirir.
+        /// </summary>
+        private void RestoreTypeButton_Click(object sender, RoutedEventArgs e)
+        {
+            var type = ArchivedTypeList.SelectedItem as ProductType;
+
+            if (type == null)
+            {
+                ShowWarning("Listeden geri alınacak ürün tipini seçin.");
+                return;
+            }
+
+            try
+            {
+                ProductTypeRepository.Restore(type.Id);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Ürün tipi geri alınamadı:\n" + ex.Message);
+                return;
+            }
+
+            WriteLog("Ürün tipi arşivden geri alındı", "Ad: " + type.Name);
+
+            RefreshTypeList();
+            RefreshArchivedTypeList();
+            RefreshAssignTab();
         }
 
         // ---------- ALAN KÜTÜPHANESİ SEKMESİ ----------
@@ -95,6 +203,22 @@ namespace DepoStok
             {
                 ShowWarning("Bu alan zaten var.");
                 return;
+            }
+
+            string closeProperty = SimilarityHelper.FindClosestMatch(
+                name, existing.Select(p => p.Name));
+
+            if (closeProperty != null)
+            {
+                MessageBoxResult confirm = MessageBox.Show(
+                    "\"" + closeProperty + "\" mi demek istediniz?\n\n" +
+                    "Yine de \"" + name + "\" adında yeni bir alan eklemek istiyor musunuz?",
+                    "Şunu mu demek istediniz?", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (confirm != MessageBoxResult.Yes)
+                {
+                    return;
+                }
             }
 
             if (isSerialNumber && dataType != "Text")
@@ -130,6 +254,80 @@ namespace DepoStok
             RefreshPropertyList();
             RefreshAssignTab();
             PropertyNameBox.Focus();
+        }
+
+        /// <summary>
+        /// Listede seçili alanı kütüphaneden siler (arşive alır). Hâlâ bir ürün tipinde
+        /// kullanılıyorsa engellenir ve hangi işlemi önce yapman gerektiğini söyler.
+        /// </summary>
+        private void DeletePropertyButton_Click(object sender, RoutedEventArgs e)
+        {
+            var property = PropertyList.SelectedItem as PropertyDefinition;
+
+            if (property == null)
+            {
+                ShowWarning("Listeden silinecek alanı seçin.");
+                return;
+            }
+
+            MessageBoxResult answer = MessageBox.Show(
+                "\"" + property.Name + "\" alanı kütüphaneden silinecek. " +
+                "Daha önce girilmiş değerler kaybolmaz, sadece görünmez olur.\n\nOnaylıyor musunuz?",
+                "Onay", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (answer != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                PropertyDefinitionRepository.Archive(property.Id);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ShowWarning(ex.Message);
+                return;
+            }
+            catch (Exception ex)
+            {
+                ShowError("Alan silinemedi:\n" + ex.Message);
+                return;
+            }
+
+            WriteLog("Alan kütüphaneden silindi", "Ad: " + property.Name);
+
+            RefreshPropertyList();
+            RefreshDeletedPropertyList();
+        }
+
+        /// <summary>
+        /// Silinmiş listede seçili alanı kütüphaneye geri getirir.
+        /// </summary>
+        private void RestorePropertyButton_Click(object sender, RoutedEventArgs e)
+        {
+            var property = DeletedPropertyList.SelectedItem as PropertyDefinition;
+
+            if (property == null)
+            {
+                ShowWarning("Listeden geri alınacak alanı seçin.");
+                return;
+            }
+
+            try
+            {
+                PropertyDefinitionRepository.Restore(property.Id);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Alan geri alınamadı:\n" + ex.Message);
+                return;
+            }
+
+            WriteLog("Alan kütüphaneye geri alındı", "Ad: " + property.Name);
+
+            RefreshPropertyList();
+            RefreshDeletedPropertyList();
         }
 
         // ---------- TİP ALANLARI SEKMESİ ----------

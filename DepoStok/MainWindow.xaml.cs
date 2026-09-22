@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Documents;
 using System.Windows.Media;
 using DepoStok.Data;
 
@@ -29,6 +30,8 @@ namespace DepoStok
         /// Açık tipin alanları (tablodaki sütunlar).
         /// </summary>
         private List<PropertyDefinition> _currentProperties = new List<PropertyDefinition>();
+        private readonly Dictionary<string, PropertyDefinition> _columnProperties =
+            new Dictionary<string, PropertyDefinition>();
 
         /// <summary>
         /// Açık tipin seri numarası sütununun tablodaki adı. Tipte seri numarası alanı yoksa boştur.
@@ -169,8 +172,11 @@ namespace DepoStok
             {
                 Header = "No",
                 Binding = new Binding(ProductListRepository.NoColumn),
-                Width = new DataGridLength(50)
+                Width = new DataGridLength(50),
+                IsReadOnly = true
             });
+
+            _columnProperties.Clear();
 
             if (includeQuantity)
             {
@@ -185,6 +191,7 @@ namespace DepoStok
             foreach (var property in properties)
             {
                 string columnName = ProductListRepository.ColumnNameFor(property.Id);
+                _columnProperties[columnName] = property;
 
                 ProductGrid.Columns.Add(new DataGridTextColumn
                 {
@@ -773,11 +780,293 @@ namespace DepoStok
             archiveWindow.Owner = this;
             archiveWindow.ShowDialog();
 
+            RefreshCurrentTypeAndPage();
+        }
+
+        // ---------- HÜCREYİ DOĞRUDAN DÜZENLEME ----------
+
+        private static readonly CultureInfo Turkish = new CultureInfo("tr-TR");
+
+        /// <summary>
+        /// Excel görünümünde bir hücrenin düzenlenmesi bitince çalışır.
+        /// Değer geçerliyse anında veritabanına kaydeder ve hücreyi düzgün biçimde gösterir.
+        /// Geçersizse düzenlemeyi iptal edip eski değere döner ve nedenini söyler.
+        /// </summary>
+        private void ProductGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+        {
+            if (e.EditAction != DataGridEditAction.Commit)
+            {
+                return;
+            }
+
+            var column = e.Column as DataGridBoundColumn;
+            var textBox = e.EditingElement as TextBox;
+
+            if (column == null || textBox == null)
+            {
+                return;
+            }
+
+            string columnName = ((Binding)column.Binding).Path.Path;
+            var rowView = (DataRowView)e.Row.Item;
+            long productId = (long)rowView[ProductListRepository.IdColumn];
+
+            string oldText = Convert.ToString(rowView[columnName]) ?? "";
+            string newText = textBox.Text.Trim();
+
+            if (newText == oldText)
+            {
+                return;
+            }
+
+            if (columnName == ProductListRepository.QuantityColumn)
+            {
+                SaveQuantityEdit(e, rowView, productId, oldText, newText);
+                return;
+            }
+
+            PropertyDefinition property;
+            if (!_columnProperties.TryGetValue(columnName, out property))
+            {
+                return;
+            }
+
+            SavePropertyEdit(e, rowView, productId, columnName, property, oldText, newText);
+        }
+
+        /// <summary>
+        /// "Miktar" hücresi düzenlenince çalışır.
+        /// </summary>
+        private void SaveQuantityEdit(
+            DataGridCellEditEndingEventArgs e, DataRowView rowView, long productId,
+            string oldText, string newText)
+        {
+            int parsed;
+
+            if (!int.TryParse(newText, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed)
+                || parsed < 1)
+            {
+                e.Cancel = true;
+                ShowCellWarning("Miktar 1 veya daha büyük bir tam sayı olmalı.");
+                return;
+            }
+
+            try
+            {
+                int oldQuantity = ProductRepository.GetQuantity(productId);
+                ProductRepository.Update(
+                    _currentType.Id, productId, oldQuantity, parsed, new List<ProductChange>());
+            }
+            catch (Exception ex)
+            {
+                e.Cancel = true;
+                ShowCellWarning("Kaydedilemedi:\n" + ex.Message);
+                return;
+            }
+
+            rowView[ProductListRepository.QuantityColumn] = parsed;
+        }
+
+        /// <summary>
+        /// Bir alan hücresi (Metin, Sayı, Tarih, Evet/Hayır veya Seri No) düzenlenince çalışır.
+        /// </summary>
+        private void SavePropertyEdit(
+            DataGridCellEditEndingEventArgs e, DataRowView rowView, long productId,
+            string columnName, PropertyDefinition property,
+            string oldText, string newText)
+        {
+            string storageValue;
+            string displayValue;
+
+            if (!TryConvertCellValue(property, newText, out storageValue, out displayValue))
+            {
+                e.Cancel = true;
+                ShowCellWarning(CellConversionError);
+                return;
+            }
+
+            if (property.IsSerialNumber)
+            {
+                if (storageValue.Length == 0 && oldText.Length > 0)
+                {
+                    e.Cancel = true;
+                    ShowCellWarning("Seri numarası dolu olan bir üründe boşaltılamaz.");
+                    return;
+                }
+
+                if (storageValue.Length > 0 &&
+                    ProductRepository.SerialNumberExists(property.Id, storageValue, productId))
+                {
+                    e.Cancel = true;
+                    ShowCellWarning("Bu seri numarası başka bir üründe kayıtlı.");
+                    return;
+                }
+            }
+
+            var change = new ProductChange
+            {
+                Property = property,
+                OldValue = ConvertOldTextToStorage(property, oldText),
+                NewValue = storageValue
+            };
+
+            try
+            {
+                int oldQuantity = ProductRepository.GetQuantity(productId);
+                ProductRepository.Update(
+                    _currentType.Id, productId, oldQuantity, null,
+                    new List<ProductChange> { change });
+            }
+            catch (Exception ex)
+            {
+                e.Cancel = true;
+                ShowCellWarning("Kaydedilemedi:\n" + ex.Message);
+                return;
+            }
+
+            rowView[columnName] = displayValue;
+        }
+
+        /// <summary>
+        /// Ekranda gösterilen eski yazıyı (örn. "12,5" ya da "Evet"), veritabanında tutulan
+        /// biçime çevirir (örn. "12.5" ya da "1"). Sadece değişikliği loga doğru yazmak için kullanılır.
+        /// </summary>
+        private string ConvertOldTextToStorage(PropertyDefinition property, string oldText)
+        {
+            string storage;
+            string display;
+
+            if (oldText.Length > 0 && TryConvertCellValue(property, oldText, out storage, out display))
+            {
+                return storage;
+            }
+
+            return oldText;
+        }
+
+        private string CellConversionError = "";
+
+        /// <summary>
+        /// Kullanıcının hücreye yazdığı yazıyı alanın türüne göre denetler ve çevirir.
+        /// Başarısızsa false verir ve CellConversionError alanına nedenini yazar.
+        /// </summary>
+        private bool TryConvertCellValue(
+            PropertyDefinition property, string text, out string storageValue, out string displayValue)
+        {
+            storageValue = "";
+            displayValue = "";
+
+            if (text.Length == 0)
+            {
+                return true;
+            }
+
+            switch (property.DataType)
+            {
+                case "Number":
+                    double number;
+                    string normalized = text.Replace(',', '.');
+
+                    if (!double.TryParse(normalized, NumberStyles.Float,
+                        CultureInfo.InvariantCulture, out number))
+                    {
+                        CellConversionError = "\"" + text + "\" geçerli bir sayı değil.";
+                        return false;
+                    }
+
+                    storageValue = normalized;
+                    displayValue = number.ToString("0.######", Turkish);
+                    return true;
+
+                case "Date":
+                    DateTime date;
+
+                    if (!DateTime.TryParseExact(text, "dd.MM.yyyy", Turkish,
+                        DateTimeStyles.None, out date))
+                    {
+                        CellConversionError =
+                            "\"" + text + "\" geçerli bir tarih değil. Örnek: 20.09.2026";
+                        return false;
+                    }
+
+                    storageValue = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                    displayValue = date.ToString("dd.MM.yyyy", Turkish);
+                    return true;
+
+                case "YesNo":
+                    string lower = text.ToLower(Turkish);
+
+                    if (lower == "evet")
+                    {
+                        storageValue = "1";
+                        displayValue = "Evet";
+                        return true;
+                    }
+
+                    if (lower == "hayır" || lower == "hayir")
+                    {
+                        storageValue = "0";
+                        displayValue = "Hayır";
+                        return true;
+                    }
+
+                    CellConversionError = "Bu alana yalnızca \"Evet\" veya \"Hayır\" yazılabilir.";
+                    return false;
+
+                default:
+                    storageValue = text;
+                    displayValue = text;
+                    return true;
+            }
+        }
+
+        private void ShowCellWarning(string message)
+        {
+            MessageBox.Show(this, message, "Uyarı", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        /// <summary>
+        /// Bir CSV dosyasından bu ürün tipine toplu ürün ekler.
+        /// </summary>
+        private void ImportButton_Click(object sender, RoutedEventArgs e)
+        {
             if (_currentType == null)
             {
-                ShowHome();
+                return;
             }
-            else
+
+            var window = new ImportWindow(_currentType, _currentProperties);
+            window.Owner = this;
+            window.ShowDialog();
+
+            if (window.Imported)
+            {
+                LoadProducts();
+            }
+        }
+
+        /// <summary>
+        /// Ürün tipi sayfasındaki alan sütunlarının sırasını değiştirmek için pencereyi açar.
+        /// </summary>
+        private void ColumnOrderButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentType == null)
+            {
+                return;
+            }
+
+            if (_currentProperties.Count < 2)
+            {
+                MessageBox.Show(this, "Sırası değiştirilecek en az iki alan olmalı.", "Bilgi",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var window = new ColumnOrderWindow(_currentType, _currentProperties);
+            window.Owner = this;
+            window.ShowDialog();
+
+            if (window.Saved)
             {
                 LoadProducts();
             }
@@ -858,6 +1147,158 @@ namespace DepoStok
                     window.FilledCount + " ürünün boş alanı dolduruldu.",
                     "Bilgi", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+        }
+
+        // ---------- YAZDIRMA ----------
+
+        /// <summary>
+        /// Ürün tipi sayfasında şu an ekranda görünen ürünleri (filtre varsa filtrelenmiş halini)
+        /// bir tablo olarak yazıcıya gönderir.
+        /// </summary>
+        private void PrintButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentType == null)
+            {
+                return;
+            }
+
+            var view = ProductGrid.ItemsSource as DataView;
+
+            if (view == null || view.Count == 0)
+            {
+                MessageBox.Show(this, "Yazdırılacak ürün yok.", "Bilgi",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var headers = new List<string>();
+            var paths = new List<string>();
+
+            foreach (DataGridBoundColumn column in ProductGrid.Columns.OfType<DataGridBoundColumn>())
+            {
+                var binding = column.Binding as Binding;
+
+                if (binding == null)
+                {
+                    continue;
+                }
+
+                headers.Add(Convert.ToString(column.Header));
+                paths.Add(binding.Path.Path);
+            }
+
+            var printDialog = new System.Windows.Controls.PrintDialog();
+
+            if (printDialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            FlowDocument document = BuildPrintDocument(headers, paths, view, printDialog.PrintableAreaWidth);
+            IDocumentPaginatorSource paginatorSource = document;
+
+            try
+            {
+                printDialog.PrintDocument(paginatorSource.DocumentPaginator, _currentType.Name);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Yazdırılamadı:\n" + ex.Message, "Hata",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                LogRepository.Write("Yazdırıldı",
+                    "Ürün tipi: " + _currentType.Name + ", " + view.Count + " ürün");
+            }
+            catch (Exception)
+            {
+                // Yazdırma zaten tamamlandı; log yazılamaması yazdırmayı engellemez.
+            }
+        }
+
+        /// <summary>
+        /// Başlık, tarih ve bir tablodan oluşan basit bir yazdırma sayfası hazırlar.
+        /// </summary>
+        private FlowDocument BuildPrintDocument(
+            List<string> headers, List<string> paths, DataView view, double pageWidth)
+        {
+            var document = new FlowDocument
+            {
+                PageWidth = pageWidth > 0 ? pageWidth : 750,
+                FontSize = 11,
+                PagePadding = new Thickness(20)
+            };
+
+            document.Blocks.Add(new Paragraph(new Run(_currentType.Name))
+            {
+                FontSize = 18,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, 0, 4)
+            });
+
+            document.Blocks.Add(new Paragraph(new Run(
+                "Yazdırma tarihi: " +
+                DateTime.Now.ToString("dd.MM.yyyy HH:mm", Turkish) +
+                "  —  " + view.Count + " ürün"))
+            {
+                FontSize = 10,
+                Foreground = Brushes.Gray,
+                Margin = new Thickness(0, 0, 0, 12)
+            });
+
+            var table = new Table();
+
+            for (int i = 0; i < headers.Count; i++)
+            {
+                table.Columns.Add(new TableColumn());
+            }
+
+            var rowGroup = new TableRowGroup();
+            table.RowGroups.Add(rowGroup);
+
+            var headerRow = new TableRow { Background = Brushes.LightGray };
+            foreach (string header in headers)
+            {
+                headerRow.Cells.Add(MakePrintCell(header, true));
+            }
+            rowGroup.Rows.Add(headerRow);
+
+            foreach (DataRowView rowView in view)
+            {
+                var row = new TableRow();
+
+                foreach (string path in paths)
+                {
+                    object value = rowView[path];
+                    string text = value == null || value == DBNull.Value ? "" : Convert.ToString(value);
+                    row.Cells.Add(MakePrintCell(text, false));
+                }
+
+                rowGroup.Rows.Add(row);
+            }
+
+            document.Blocks.Add(table);
+            return document;
+        }
+
+        private static TableCell MakePrintCell(string text, bool bold)
+        {
+            var paragraph = new Paragraph(new Run(text)) { Margin = new Thickness(0) };
+
+            if (bold)
+            {
+                paragraph.FontWeight = FontWeights.Bold;
+            }
+
+            return new TableCell(paragraph)
+            {
+                BorderBrush = Brushes.Gray,
+                BorderThickness = new Thickness(0, 0, 0, 1),
+                Padding = new Thickness(4, 3, 4, 3)
+            };
         }
 
         // ---------- DIŞA AKTARMA ----------
@@ -1111,14 +1552,33 @@ namespace DepoStok
             settingsWindow.Owner = this;
             settingsWindow.ShowDialog();
 
+            RefreshCurrentTypeAndPage();
+        }
+
+        /// <summary>
+        /// Ayarlar veya Arşiv penceresi kapanınca çağrılır. Açık olan ürün tipi hâlâ varsa
+        /// adını ve tablosunu tazeler (ad değişmiş olabilir); tip arşivlendiyse ana sayfaya döner.
+        /// </summary>
+        private void RefreshCurrentTypeAndPage()
+        {
             if (_currentType == null)
             {
                 ShowHome();
+                return;
             }
-            else
+
+            ProductType refreshed = ProductTypeRepository.GetAll()
+                .FirstOrDefault(t => t.Id == _currentType.Id);
+
+            if (refreshed == null)
             {
-                LoadProducts();
+                ShowHome();
+                return;
             }
+
+            _currentType = refreshed;
+            TypePageTitle.Text = refreshed.Name;
+            LoadProducts();
         }
 
         /// <summary>

@@ -69,16 +69,23 @@
     <Compile Include="BulkFillWindow.xaml.cs">
       <DependentUpon>BulkFillWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ColumnOrderWindow.xaml.cs">
+      <DependentUpon>ColumnOrderWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Data\BackupService.cs" />
     <Compile Include="Data\CsvExporter.cs" />
+    <Compile Include="Data\CsvImporter.cs" />
     <Compile Include="Data\LogRepository.cs" />
     <Compile Include="Data\ProductArchiveRepository.cs" />
+    <Compile Include="Data\ProductImportRepository.cs" />
     <Compile Include="Data\ProductListRepository.cs" />
     <Compile Include="Data\ProductRepository.cs" />
     <Compile Include="Data\PropertyDefinitionRepository.cs" />
     <Compile Include="Data\RecentProductsRepository.cs" />
     <Compile Include="Data\RenameRepository.cs" />
+    <Compile Include="Data\ReportRepository.cs" />
     <Compile Include="Data\SerialSearchRepository.cs" />
+    <Compile Include="Data\SimilarityHelper.cs" />
     <Compile Include="Data\TypePropertyRepository.cs" />
     <Compile Include="DeleteProductsWindow.xaml.cs">
       <DependentUpon>DeleteProductsWindow.xaml</DependentUpon>
@@ -86,11 +93,17 @@
     <Compile Include="HistoryWindow.xaml.cs">
       <DependentUpon>HistoryWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ImportWindow.xaml.cs">
+      <DependentUpon>ImportWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ProductDetailWindow.xaml.cs">
       <DependentUpon>ProductDetailWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="RenameWindow.xaml.cs">
       <DependentUpon>RenameWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ReportWindow.xaml.cs">
+      <DependentUpon>ReportWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="ScrapWindow.xaml.cs">
       <DependentUpon>ScrapWindow.xaml</DependentUpon>
@@ -110,11 +123,19 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="ColumnOrderWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="DeleteProductsWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="HistoryWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ImportWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -137,6 +158,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="RenameWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ReportWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

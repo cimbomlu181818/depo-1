@@ -84,6 +84,34 @@ namespace DepoStok.Data
         }
 
         /// <summary>
+        /// Bir ürün tipindeki alanların sırasını değiştirir. propertyIdsInOrder, alanların
+        /// yeni sırayla numaralarını taşır (ilk sırada olan en soldaki sütun olur).
+        /// </summary>
+        public static void Reorder(long productTypeId, List<long> propertyIdsInOrder)
+        {
+            using (var connection = Database.OpenConnection())
+            using (var transaction = connection.BeginTransaction())
+            {
+                for (int i = 0; i < propertyIdsInOrder.Count; i++)
+                {
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.Transaction = transaction;
+                        command.CommandText =
+                            "UPDATE TypeProperties SET SortOrder = @sortOrder " +
+                            "WHERE ProductTypeId = @typeId AND PropertyId = @propertyId;";
+                        command.Parameters.AddWithValue("@sortOrder", i);
+                        command.Parameters.AddWithValue("@typeId", productTypeId);
+                        command.Parameters.AddWithValue("@propertyId", propertyIdsInOrder[i]);
+                        command.ExecuteNonQuery();
+                    }
+                }
+
+                transaction.Commit();
+            }
+        }
+
+        /// <summary>
         /// Bir alanı ürün tipinden çıkarır (arşive alır).
         /// Ürünlerdeki değerler silinmez. Alan tipe tekrar eklenirse değerler geri gelir.
         /// </summary>

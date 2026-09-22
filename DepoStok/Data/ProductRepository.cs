@@ -395,7 +395,10 @@ namespace DepoStok.Data
         /// <summary>
         /// Bir değeri ProductValues tablosuna, türüne uygun sütuna yazar.
         /// </summary>
-        private static void InsertValue(
+        /// <summary>
+        /// İçe aktarma gibi başka Data sınıflarının da kullanabilmesi için "internal" yapıldı.
+        /// </summary>
+        internal static void InsertValue(
             SQLiteConnection connection,
             SQLiteTransaction transaction,
             long productId,

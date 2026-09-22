@@ -1,0 +1,72 @@
+﻿<Window x:Class="DepoStok.ReportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Raporlar"
+        Height="560" Width="650"
+        MinHeight="420" MinWidth="550"
+        WindowStartupLocation="CenterOwner">
+
+    <DockPanel Margin="15">
+
+        <!-- ALT: DÜĞMELER -->
+        <StackPanel DockPanel.Dock="Bottom"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,15,0,0">
+            <Button Content="Yazdır"
+                    Width="90" Height="30"
+                    Click="PrintButton_Click" />
+            <Button Content="Kapat"
+                    Width="90" Height="30"
+                    Margin="8,0,0,0"
+                    IsCancel="True" />
+        </StackPanel>
+
+        <TextBlock Text="Genel durum raporu"
+                   DockPanel.Dock="Top"
+                   FontSize="18"
+                   FontWeight="Bold"
+                   Margin="0,0,0,10" />
+
+        <!-- ÜST: ÖZET SAYILAR -->
+        <UniformGrid DockPanel.Dock="Top"
+                     Columns="2"
+                     Margin="0,0,0,15">
+            <TextBlock x:Name="TypeSummaryText" Margin="0,0,0,6" />
+            <TextBlock x:Name="PropertySummaryText" Margin="0,0,0,6" />
+            <TextBlock x:Name="ProductSummaryText" Margin="0,0,0,6" />
+            <TextBlock x:Name="ScrapSummaryText" Margin="0,0,0,6" />
+        </UniformGrid>
+
+        <TextBlock Text="Ürün tipi bazında dağılım"
+                   DockPanel.Dock="Top"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,5" />
+
+        <!-- ORTA: TİP BAZINDA TABLO -->
+        <DataGrid x:Name="TypeGrid"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserSortColumns="False"
+                  CanUserReorderColumns="False"
+                  HeadersVisibility="Column"
+                  GridLinesVisibility="All">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Ürün tipi"
+                                    Binding="{Binding TypeName}"
+                                    Width="*" />
+                <DataGridTextColumn Header="Aktif ürün"
+                                    Binding="{Binding ActiveCount}"
+                                    Width="110" />
+                <DataGridTextColumn Header="Hurdada"
+                                    Binding="{Binding ScrapCount}"
+                                    Width="110" />
+                <DataGridTextColumn Header="Silinmiş"
+                                    Binding="{Binding ArchivedCount}"
+                                    Width="110" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+    </DockPanel>
+</Window>

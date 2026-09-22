@@ -173,6 +173,21 @@
                                 Margin="0,0,0,8"
                                 Click="ExportButton_Click" />
 
+                        <Button Content="İçe Aktar"
+                                Height="32"
+                                Margin="0,0,0,8"
+                                Click="ImportButton_Click" />
+
+                        <Button Content="Yazdır"
+                                Height="32"
+                                Margin="0,0,0,8"
+                                Click="PrintButton_Click" />
+
+                        <Button Content="Sütun Düzenle"
+                                Height="32"
+                                Margin="0,0,0,8"
+                                Click="ColumnOrderButton_Click" />
+
                     </StackPanel>
 
                     <!-- MOD 2: FİLTRE BARI (üstte geri, altında filtre öğeleri) -->
@@ -224,14 +239,15 @@
 
                     <DataGrid x:Name="ProductGrid"
                               AutoGenerateColumns="False"
-                              IsReadOnly="True"
+                              IsReadOnly="False"
                               CanUserAddRows="False"
                               CanUserSortColumns="False"
                               CanUserReorderColumns="False"
                               FrozenColumnCount="2"
                               SelectionUnit="FullRow"
                               HeadersVisibility="Column"
-                              GridLinesVisibility="All" />
+                              GridLinesVisibility="All"
+                              CellEditEnding="ProductGrid_CellEditEnding" />
 
                 </DockPanel>
             </Grid>

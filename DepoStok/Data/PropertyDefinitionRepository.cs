@@ -107,5 +107,94 @@ namespace DepoStok.Data
                 command.ExecuteNonQuery();
             }
         }
+
+        /// <summary>
+        /// Arşivdeki (silinmiş) alanları Türkçe alfabe sırasıyla verir.
+        /// </summary>
+        public static List<PropertyDefinition> GetArchived()
+        {
+            var list = new List<PropertyDefinition>();
+
+            using (var connection = Database.OpenConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText =
+                    "SELECT Id, Name, DataType, IsSerialNumber " +
+                    "FROM PropertyDefinitions WHERE IsArchived = 1;";
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        list.Add(new PropertyDefinition
+                        {
+                            Id = reader.GetInt64(0),
+                            Name = reader.GetString(1),
+                            DataType = reader.GetString(2),
+                            IsSerialNumber = reader.GetInt32(3) == 1
+                        });
+                    }
+                }
+            }
+
+            var turkish = StringComparer.Create(new CultureInfo("tr-TR"), true);
+            list.Sort((a, b) => turkish.Compare(a.Name, b.Name));
+            return list;
+        }
+
+        /// <summary>
+        /// Bu alanın, arşivde olmayan bir ürün tipine hâlâ atanmış olup olmadığını söyler.
+        /// </summary>
+        public static bool IsUsedByAnyType(long propertyId)
+        {
+            using (var connection = Database.OpenConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText =
+                    "SELECT COUNT(*) FROM TypeProperties tp " +
+                    "JOIN ProductTypes t ON t.Id = tp.ProductTypeId " +
+                    "WHERE tp.PropertyId = @id AND tp.IsArchived = 0 AND t.IsArchived = 0;";
+                command.Parameters.AddWithValue("@id", propertyId);
+                return Convert.ToInt32(command.ExecuteScalar()) > 0;
+            }
+        }
+
+        /// <summary>
+        /// Alanı kütüphaneden siler (arşive alır). Herhangi bir ürün tipine atanmışsa
+        /// önce oradan çıkarılması gerekir; bu durumda InvalidOperationException fırlatılır.
+        /// Ürünlerdeki eski değerler silinmez, sadece görünmez olur.
+        /// </summary>
+        public static void Archive(long propertyId)
+        {
+            if (IsUsedByAnyType(propertyId))
+            {
+                throw new InvalidOperationException(
+                    "Bu alan hâlâ bir veya daha fazla ürün tipinde kullanılıyor. " +
+                    "Önce ilgili tiplerden çıkarın.");
+            }
+
+            SetArchived(propertyId, 1);
+        }
+
+        /// <summary>
+        /// Arşivdeki bir alanı kütüphaneye geri getirir.
+        /// </summary>
+        public static void Restore(long propertyId)
+        {
+            SetArchived(propertyId, 0);
+        }
+
+        private static void SetArchived(long propertyId, int archived)
+        {
+            using (var connection = Database.OpenConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText =
+                    "UPDATE PropertyDefinitions SET IsArchived = @archived WHERE Id = @id;";
+                command.Parameters.AddWithValue("@archived", archived);
+                command.Parameters.AddWithValue("@id", propertyId);
+                command.ExecuteNonQuery();
+            }
+        }
     }
 }
