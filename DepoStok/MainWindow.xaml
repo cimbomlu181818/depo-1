@@ -14,6 +14,8 @@
             <MenuItem Header="Ayarlar" Click="SettingsMenu_Click" />
             <MenuItem Header="İşlem Geçmişi" Click="HistoryMenu_Click" />
             <MenuItem Header="Arşiv" Click="ArchiveMenu_Click" />
+            <MenuItem Header="Raporlar" Click="ReportMenu_Click" />
+            <MenuItem Header="Zimmetler" Click="AssignmentsMenu_Click" />
             <MenuItem Header="Yedekleme">
                 <MenuItem Header="Yedek al..." Click="BackupMenu_Click" />
                 <MenuItem Header="Yedekten geri yükle..." Click="RestoreMenu_Click" />

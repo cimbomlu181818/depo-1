@@ -66,12 +66,19 @@
     <Compile Include="ArchiveWindow.xaml.cs">
       <DependentUpon>ArchiveWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="AssignmentsWindow.xaml.cs">
+      <DependentUpon>AssignmentsWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="AssignWindow.xaml.cs">
+      <DependentUpon>AssignWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="BulkFillWindow.xaml.cs">
       <DependentUpon>BulkFillWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="ColumnOrderWindow.xaml.cs">
       <DependentUpon>ColumnOrderWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Data\AssignmentRepository.cs" />
     <Compile Include="Data\BackupService.cs" />
     <Compile Include="Data\CsvExporter.cs" />
     <Compile Include="Data\CsvImporter.cs" />
@@ -116,6 +123,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="ArchiveWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="AssignmentsWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="AssignWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -783,6 +783,32 @@ namespace DepoStok
             RefreshCurrentTypeAndPage();
         }
 
+        // ---------- RAPORLAR ----------
+
+        /// <summary>
+        /// Menüden Raporlar'a tıklanınca özet rapor penceresini açar.
+        /// </summary>
+        private void ReportMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var reportWindow = new ReportWindow();
+            reportWindow.Owner = this;
+            reportWindow.ShowDialog();
+        }
+
+        // ---------- ZİMMETLER ----------
+
+        /// <summary>
+        /// Menüden Zimmetler'e tıklanınca kimde ne var listesini açar.
+        /// </summary>
+        private void AssignmentsMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var assignmentsWindow = new AssignmentsWindow();
+            assignmentsWindow.Owner = this;
+            assignmentsWindow.ShowDialog();
+
+            RefreshCurrentTypeAndPage();
+        }
+
         // ---------- HÜCREYİ DOĞRUDAN DÜZENLEME ----------
 
         private static readonly CultureInfo Turkish = new CultureInfo("tr-TR");
@@ -1609,7 +1635,7 @@ namespace DepoStok
             {
                 return;
             }
-
+/**/
             var addWindow = new AddProductWindow(_currentType);
             addWindow.Owner = this;
             addWindow.ShowDialog();
@@ -1617,4 +1643,4 @@ namespace DepoStok
             LoadProducts();
         }
     }
-}
+}/**/

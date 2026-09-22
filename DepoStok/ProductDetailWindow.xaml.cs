@@ -55,6 +55,134 @@ namespace DepoStok
             ScrapCheck.IsChecked = isScrap;
 
             BuildViewMode();
+            LoadAssignments();
+        }
+
+        // ---------- ZİMMET DURUMU ----------
+
+        /// <summary>
+        /// Bu ürünün şu an üzerinde duran zimmetlerini okuyup listeyi tazeler.
+        /// </summary>
+        private void LoadAssignments()
+        {
+            AssignmentsPanel.Children.Clear();
+
+            List<Assignment> active;
+            int available;
+
+            try
+            {
+                active = AssignmentRepository.GetActiveForProduct(_productId);
+                available = AssignmentRepository.GetAvailableQuantity(_productId);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Zimmet bilgisi okunamadı:\n" + ex.Message);
+                return;
+            }
+
+            NoAssignmentText.Visibility = active.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            AssignButton.IsEnabled = available > 0;
+            AssignButton.Content = active.Count > 0 ? "Ayrıca Zimmetle" : "Zimmetle";
+
+            foreach (var assignment in active)
+            {
+                var row = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                string info = assignment.PersonName;
+
+                if (!string.IsNullOrEmpty(assignment.RegistryNo) || !string.IsNullOrEmpty(assignment.Department))
+                {
+                    info += " (" +
+                        string.Join(", ", new[] { assignment.RegistryNo, assignment.Department }
+                            .Where(s => !string.IsNullOrEmpty(s))) + ")";
+                }
+
+                info += " — miktar: " + assignment.Quantity + " — " + assignment.AssignedAtText;
+
+                var text = new TextBlock
+                {
+                    Text = info,
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+
+                var returnButton = new Button
+                {
+                    Content = "İade Al",
+                    Width = 80,
+                    Height = 26,
+                    Margin = new Thickness(8, 0, 0, 0)
+                };
+
+                long assignmentId = assignment.Id;
+                returnButton.Click += (s, e) => ReturnAssignment(assignmentId);
+
+                Grid.SetColumn(returnButton, 1);
+
+                row.Children.Add(text);
+                row.Children.Add(returnButton);
+                AssignmentsPanel.Children.Add(row);
+            }
+        }
+
+        private void AssignButton_Click(object sender, RoutedEventArgs e)
+        {
+            int available;
+
+            try
+            {
+                available = AssignmentRepository.GetAvailableQuantity(_productId);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Zimmet bilgisi okunamadı:\n" + ex.Message);
+                return;
+            }
+
+            if (available <= 0)
+            {
+                ShowWarning("Bu ürünün zimmetlenebilecek miktarı kalmadı.");
+                return;
+            }
+
+            string serialNo = _details.FirstOrDefault(d => d.Key == "Sıra no").Value;
+            string description = TitleText.Text + (serialNo != null ? " (Sıra no: " + serialNo + ")" : "");
+
+            var window = new AssignWindow(_productId, _typeId, description, available);
+            window.Owner = this;
+
+            if (window.ShowDialog() == true)
+            {
+                Changed = true;
+                LoadAssignments();
+            }
+        }
+
+        private void ReturnAssignment(long assignmentId)
+        {
+            var answer = MessageBox.Show(this, "Bu zimmet iade alınacak, onaylıyor musun?", "Onay",
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (answer != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                AssignmentRepository.Return(assignmentId, null);
+            }
+            catch (Exception ex)
+            {
+                ShowError("İade alınamadı:\n" + ex.Message);
+                return;
+            }
+
+            Changed = true;
+            LoadAssignments();
         }
 
         // ---------- GÖRÜNTÜLEME MODU ----------
@@ -118,6 +246,8 @@ namespace DepoStok
             SaveButton.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
             CancelEditButton.Visibility = editing ? Visibility.Visible : Visibility.Collapsed;
             ScrapCheck.IsEnabled = !editing;
+            AssignButton.IsEnabled = !editing && AssignmentRepository.GetAvailableQuantity(_productId) > 0;
+            AssignmentsPanel.IsEnabled = !editing;
 
             if (editing)
             {

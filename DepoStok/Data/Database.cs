@@ -108,6 +108,27 @@ CREATE TABLE IF NOT EXISTS ActionLogs (
     Action     TEXT NOT NULL,
     Details    TEXT
 );
+
+CREATE TABLE IF NOT EXISTS Assignments (
+    Id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    ProductId      INTEGER NOT NULL REFERENCES Products(Id),
+    ProductTypeId  INTEGER NOT NULL REFERENCES ProductTypes(Id),
+    Quantity       INTEGER NOT NULL DEFAULT 1,
+    PersonName     TEXT    NOT NULL,
+    RegistryNo     TEXT,
+    Department     TEXT,
+    AssignedAt     TEXT    NOT NULL,
+    AssignedNote   TEXT,
+    ReturnedAt     TEXT,
+    ReturnedNote   TEXT,
+    IsReturned     INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS IX_Assignments_Product
+    ON Assignments (ProductId, IsReturned);
+
+CREATE INDEX IF NOT EXISTS IX_Assignments_Active
+    ON Assignments (IsReturned, AssignedAt);
 ";
     }
 }
