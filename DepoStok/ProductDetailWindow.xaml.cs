@@ -109,21 +109,39 @@ namespace DepoStok
                     VerticalAlignment = VerticalAlignment.Center
                 };
 
+                var buttonsPanel = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Margin = new Thickness(8, 0, 0, 0)
+                };
+
+                var printButton = new Button
+                {
+                    Content = "Yazdır",
+                    Width = 70,
+                    Height = 26,
+                    Margin = new Thickness(0, 0, 6, 0)
+                };
+
                 var returnButton = new Button
                 {
                     Content = "İade Al",
                     Width = 80,
-                    Height = 26,
-                    Margin = new Thickness(8, 0, 0, 0)
+                    Height = 26
                 };
+
+                Assignment current = assignment;
+                printButton.Click += (s, e) => AssignmentReceiptPrinter.Print(this, current);
 
                 long assignmentId = assignment.Id;
                 returnButton.Click += (s, e) => ReturnAssignment(assignmentId);
 
-                Grid.SetColumn(returnButton, 1);
+                buttonsPanel.Children.Add(printButton);
+                buttonsPanel.Children.Add(returnButton);
+                Grid.SetColumn(buttonsPanel, 1);
 
                 row.Children.Add(text);
-                row.Children.Add(returnButton);
+                row.Children.Add(buttonsPanel);
                 AssignmentsPanel.Children.Add(row);
             }
         }

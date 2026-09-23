@@ -71,6 +71,15 @@
                 <DataGridTextColumn Header="Zimmet tarihi"
                                     Binding="{Binding AssignedAtText}"
                                     Width="140" />
+                <DataGridTemplateColumn Header="" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="Yazdır"
+                                    Width="70" Height="26"
+                                    Click="PrintButton_Click" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTemplateColumn Header="" Width="90">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>

@@ -66,6 +66,7 @@
     <Compile Include="ArchiveWindow.xaml.cs">
       <DependentUpon>ArchiveWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="AssignmentReceiptPrinter.cs" />
     <Compile Include="AssignmentsWindow.xaml.cs">
       <DependentUpon>AssignmentsWindow.xaml</DependentUpon>
     </Compile>
@@ -96,6 +97,9 @@
     <Compile Include="Data\TypePropertyRepository.cs" />
     <Compile Include="DeleteProductsWindow.xaml.cs">
       <DependentUpon>DeleteProductsWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="HandoverWindow.xaml.cs">
+      <DependentUpon>HandoverWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="HistoryWindow.xaml.cs">
       <DependentUpon>HistoryWindow.xaml</DependentUpon>
@@ -143,6 +147,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="DeleteProductsWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="HandoverWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

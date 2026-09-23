@@ -103,6 +103,16 @@ namespace DepoStok
         }
 
         /// <summary>
+        /// Satırdaki "Yazdır" düğmesine basılınca o zimmet için tutanak yazdırır.
+        /// </summary>
+        private void PrintButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = (Button)sender;
+            var assignment = (Assignment)button.DataContext;
+            AssignmentReceiptPrinter.Print(this, assignment);
+        }
+
+        /// <summary>
         /// Satırdaki "İade Al" düğmesine basılınca o zimmeti iade alınmış işaretler ve listeyi tazeler.
         /// </summary>
         private void ReturnButton_Click(object sender, RoutedEventArgs e)

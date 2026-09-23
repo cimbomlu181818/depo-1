@@ -808,7 +808,12 @@ namespace DepoStok
 
             RefreshCurrentTypeAndPage();
         }
-
+        private void HandoverMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var handoverWindow = new HandoverWindow();
+            handoverWindow.Owner = this;
+            handoverWindow.ShowDialog();
+        }
         // ---------- HÜCREYİ DOĞRUDAN DÜZENLEME ----------
 
         private static readonly CultureInfo Turkish = new CultureInfo("tr-TR");
