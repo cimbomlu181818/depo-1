@@ -122,6 +122,52 @@ namespace DepoStok.Data
             return safetyPath;
         }
 
+        private const int AutomaticBackupRetentionDays = 14;
+
+        /// <summary>
+        /// Bugün için henüz otomatik yedek alınmadıysa bir tane alır ve 14 günden eski
+        /// otomatik yedekleri siler. Herhangi bir sorun olursa sessizce geçer;
+        /// otomatik yedekleme programın açılmasını asla engellemez.
+        /// </summary>
+        public static void RunAutomaticBackupIfNeeded()
+        {
+            try
+            {
+                string folder = Path.Combine(Database.DataFolder, "Yedekler", "Otomatik");
+                Directory.CreateDirectory(folder);
+
+                string todayFile = Path.Combine(
+                    folder,
+                    "otomatik-yedek-" + DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + ".db");
+
+                if (!File.Exists(todayFile))
+                {
+                    CopyDatabaseTo(todayFile);
+                }
+
+                DateTime cutoff = DateTime.Now.AddDays(-AutomaticBackupRetentionDays);
+
+                foreach (string file in Directory.GetFiles(folder, "otomatik-yedek-*.db"))
+                {
+                    if (File.GetLastWriteTime(file) < cutoff)
+                    {
+                        try
+                        {
+                            File.Delete(file);
+                        }
+                        catch (Exception)
+                        {
+                            // Silinemeyen dosyayı görmezden gel, bir sonraki açılışta tekrar denenir.
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Otomatik yedekte sorun olsa da program açılmaya devam etmeli.
+            }
+        }
+
         /// <summary>
         /// Çalışan veritabanını verilen dosyaya kopyalar. Dosya varsa üzerine yazar.
         /// </summary>

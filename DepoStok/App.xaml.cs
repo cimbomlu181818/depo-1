@@ -14,7 +14,7 @@ namespace DepoStok
             {
                 Database.Initialize();
 
-             
+                BackupService.RunAutomaticBackupIfNeeded();
             }
             catch (Exception ex)
             {
