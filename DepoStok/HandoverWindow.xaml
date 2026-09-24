@@ -86,12 +86,70 @@
                   HeadersVisibility="Column"
                   GridLinesVisibility="All">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Seri No"
-                                    Binding="{Binding SerialNo, UpdateSourceTrigger=PropertyChanged}"
-                                    Width="140" />
-                <DataGridTextColumn Header="Malzemenin cinsi"
-                                    Binding="{Binding ItemType, UpdateSourceTrigger=PropertyChanged}"
-                                    Width="*" />
+                <DataGridTemplateColumn Header="Seri No" Width="140">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding SerialNo}"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0,0,0" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBox x:Name="Box"
+                                         Text="{Binding SerialNo, UpdateSourceTrigger=PropertyChanged}"
+                                         BorderThickness="0"
+                                         Loaded="SerialBox_Loaded"
+                                         TextChanged="SearchBox_TextChanged" />
+                                <Popup x:Name="Popup"
+                                       PlacementTarget="{Binding ElementName=Box}"
+                                       Placement="Bottom"
+                                       StaysOpen="False"
+                                       AllowsTransparency="True">
+                                    <Border Background="White" BorderBrush="Gray" BorderThickness="1">
+                                        <ListBox x:Name="List"
+                                                 Width="240" MaxHeight="160"
+                                                 DisplayMemberPath="DisplayText"
+                                                 PreviewMouseLeftButtonDown="SuggestionsList_PreviewMouseLeftButtonDown" />
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Malzemenin cinsi" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding ItemType}"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0,0,0" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <TextBox x:Name="Box"
+                                         Text="{Binding ItemType, UpdateSourceTrigger=PropertyChanged}"
+                                         BorderThickness="0"
+                                         Loaded="TypeBox_Loaded"
+                                         TextChanged="SearchBox_TextChanged" />
+                                <Popup x:Name="Popup"
+                                       PlacementTarget="{Binding ElementName=Box}"
+                                       Placement="Bottom"
+                                       StaysOpen="False"
+                                       AllowsTransparency="True">
+                                    <Border Background="White" BorderBrush="Gray" BorderThickness="1">
+                                        <ListBox x:Name="List"
+                                                 Width="280" MaxHeight="160"
+                                                 DisplayMemberPath="DisplayText"
+                                                 PreviewMouseLeftButtonDown="SuggestionsList_PreviewMouseLeftButtonDown" />
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTextColumn Header="Miktarı"
                                     Binding="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"
                                     Width="80" />

@@ -70,11 +70,20 @@
                        Foreground="Gray"
                        Margin="0,0,0,5" />
 
-            <Button x:Name="AssignButton"
-                    Content="Zimmetle"
-                    Width="110" Height="28"
-                    HorizontalAlignment="Left"
-                    Click="AssignButton_Click" />
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="AssignButton"
+                        Content="Zimmetle"
+                        Width="110" Height="28"
+                        HorizontalAlignment="Left"
+                        Click="AssignButton_Click" />
+
+                <Button x:Name="HandoverButton"
+                        Content="Teslim-Tesellüm"
+                        Width="130" Height="28"
+                        HorizontalAlignment="Left"
+                        Margin="8,0,0,0"
+                        Click="HandoverButton_Click" />
+            </StackPanel>
 
         </StackPanel>
 

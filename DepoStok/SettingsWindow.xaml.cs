@@ -191,7 +191,6 @@ namespace DepoStok
 
             var selectedItem = (ComboBoxItem)DataTypeBox.SelectedItem;
             string dataType = (string)selectedItem.Tag;
-            bool isSerialNumber = SerialNumberCheck.IsChecked == true;
 
             var existing = PropertyDefinitionRepository.GetAll();
             var turkish = new CultureInfo("tr-TR");
@@ -221,21 +220,9 @@ namespace DepoStok
                 }
             }
 
-            if (isSerialNumber && dataType != "Text")
-            {
-                ShowWarning("Seri numarası alanının türü Metin olmalı.");
-                return;
-            }
-
-            if (isSerialNumber && existing.Any(p => p.IsSerialNumber))
-            {
-                ShowWarning("Seri numarası alanı zaten tanımlı. Birden fazla olamaz.");
-                return;
-            }
-
             try
             {
-                PropertyDefinitionRepository.Add(name, dataType, isSerialNumber);
+                PropertyDefinitionRepository.Add(name, dataType, false);
             }
             catch (Exception ex)
             {
@@ -245,12 +232,10 @@ namespace DepoStok
 
             WriteLog("Alan eklendi",
                 "Ad: " + name +
-                ", tür: " + Convert.ToString(selectedItem.Content) +
-                (isSerialNumber ? ", seri numarası alanı" : ""));
+                ", tür: " + Convert.ToString(selectedItem.Content));
 
             PropertyNameBox.Clear();
             DataTypeBox.SelectedIndex = 0;
-            SerialNumberCheck.IsChecked = false;
             RefreshPropertyList();
             RefreshAssignTab();
             PropertyNameBox.Focus();
@@ -542,6 +527,12 @@ namespace DepoStok
             if (property == null)
             {
                 ShowWarning("Listeden adını değiştireceğiniz alanı seçin.");
+                return;
+            }
+
+            if (PropertyDefinitionRepository.IsProtected(property.Name))
+            {
+                ShowWarning("\"" + property.Name + "\" sistemin sabit bir alanıdır, adı değiştirilemez.");
                 return;
             }
 

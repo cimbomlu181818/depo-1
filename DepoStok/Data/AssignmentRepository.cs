@@ -70,6 +70,8 @@ namespace DepoStok.Data
         private static string DescribeProduct(
             SQLiteConnection connection, SQLiteTransaction transaction, long productId, string typeName)
         {
+            string systemName = PropertyDefinitionRepository.GetSystemName(productId, typeName);
+
             using (var command = connection.CreateCommand())
             {
                 command.Transaction = transaction;
@@ -85,12 +87,12 @@ namespace DepoStok.Data
                 {
                     if (reader.Read() && !reader.IsDBNull(1))
                     {
-                        return typeName + ", " + reader.GetString(0) + ": " + reader.GetString(1);
+                        return systemName + ", " + reader.GetString(0) + ": " + reader.GetString(1);
                     }
                 }
             }
 
-            return typeName + " (ürün no: " + productId + ")";
+            return systemName + " (ürün no: " + productId + ")";
         }
 
         /// <summary>

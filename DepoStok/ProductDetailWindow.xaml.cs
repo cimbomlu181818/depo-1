@@ -166,8 +166,10 @@ namespace DepoStok
                 return;
             }
 
-            string serialNo = _details.FirstOrDefault(d => d.Key == "Sıra no").Value;
-            string description = TitleText.Text + (serialNo != null ? " (Sıra no: " + serialNo + ")" : "");
+            string serialNo = _details.FirstOrDefault(
+                d => d.Key == PropertyDefinitionRepository.SerialNumberFieldName).Value;
+            string systemName = PropertyDefinitionRepository.GetSystemName(_productId, TitleText.Text);
+            string description = systemName + (serialNo != null ? " (Seri Numara: " + serialNo + ")" : "");
 
             var window = new AssignWindow(_productId, _typeId, description, available);
             window.Owner = this;
@@ -177,6 +179,17 @@ namespace DepoStok
                 Changed = true;
                 LoadAssignments();
             }
+        }
+
+        private void HandoverButton_Click(object sender, RoutedEventArgs e)
+        {
+            string serialNo = _details.FirstOrDefault(
+                d => d.Key == PropertyDefinitionRepository.SerialNumberFieldName).Value;
+            string systemName = PropertyDefinitionRepository.GetSystemName(_productId, TitleText.Text);
+
+            var window = new HandoverWindow(serialNo, systemName);
+            window.Owner = this;
+            window.ShowDialog();
         }
 
         private void ReturnAssignment(long assignmentId)

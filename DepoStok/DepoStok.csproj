@@ -83,6 +83,7 @@
     <Compile Include="Data\BackupService.cs" />
     <Compile Include="Data\CsvExporter.cs" />
     <Compile Include="Data\CsvImporter.cs" />
+    <Compile Include="Data\HandoverSearchRepository.cs" />
     <Compile Include="Data\LogRepository.cs" />
     <Compile Include="Data\ProductArchiveRepository.cs" />
     <Compile Include="Data\ProductImportRepository.cs" />

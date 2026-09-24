@@ -98,10 +98,11 @@
                     <ComboBoxItem Content="Evet/Hayır" Tag="YesNo" />
                 </ComboBox>
 
-                <CheckBox x:Name="SerialNumberCheck"
-                          DockPanel.Dock="Top"
-                          Content="Bu alan seri numarasıdır"
-                          Margin="0,0,0,8" />
+                <TextBlock DockPanel.Dock="Top"
+                           Text="'Seri Numara' ve 'Sistem Adı' alanları kütüphanede her zaman hazır bulunur, ayrıca eklemenize gerek yok."
+                           Foreground="Gray"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,8" />
 
                 <Button DockPanel.Dock="Top"
                         Content="Ekle"

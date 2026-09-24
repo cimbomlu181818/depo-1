@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Media;
 using DepoStok.Data;
@@ -22,12 +24,171 @@ namespace DepoStok
 
         public ObservableCollection<HandoverItem> Items { get; } = new ObservableCollection<HandoverItem>();
 
-        public HandoverWindow()
+        public HandoverWindow() : this(null, null)
+        {
+        }
+
+        /// <summary>
+        /// Bir ürün detayından açılınca, ilk satırı o ürünün seri no ve cinsiyle önceden doldurur.
+        /// İkisi de boşsa normal boş pencere gibi açılır.
+        /// </summary>
+        public HandoverWindow(string serialNo, string itemType)
         {
             InitializeComponent();
 
             DateText.Text = DateTime.Now.ToString("dd.MM.yyyy", Turkish);
             ItemsGrid.ItemsSource = Items;
+
+            if (!string.IsNullOrWhiteSpace(serialNo) || !string.IsNullOrWhiteSpace(itemType))
+            {
+                Items.Add(new HandoverItem
+                {
+                    SerialNo = serialNo,
+                    ItemType = itemType,
+                    Quantity = "1"
+                });
+            }
+        }
+
+        // ---------- SERİ NO / MALZEME CİNSİ ARAMA ----------
+
+        /// <summary>Bir arama kutusunun kendi Popup/Liste referanslarını ve arama türünü tutar.</summary>
+        private class AutoCompleteRefs
+        {
+            public Popup Popup;
+            public ListBox List;
+            public bool SerialOnly;
+        }
+
+        private void SerialBox_Loaded(object sender, RoutedEventArgs e)
+        {
+            WireSearchBox((TextBox)sender, serialOnly: true);
+        }
+
+        private void TypeBox_Loaded(object sender, RoutedEventArgs e)
+        {
+            WireSearchBox((TextBox)sender, serialOnly: false);
+        }
+
+        private void WireSearchBox(TextBox box, bool serialOnly)
+        {
+            try
+            {
+                var container = (Grid)box.Parent;
+                var popup = container.Children.OfType<Popup>().First();
+                var list = (ListBox)((Border)popup.Child).Child;
+
+                box.Tag = new AutoCompleteRefs { Popup = popup, List = list, SerialOnly = serialOnly };
+                list.Tag = box;
+
+                box.Focus();
+                box.SelectAll();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Arama kutusu hazırlanamadı (teşhis):\n" + ex, "Hata",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var box = (TextBox)sender;
+            var refs = box.Tag as AutoCompleteRefs;
+
+            if (refs == null)
+            {
+                return;
+            }
+
+            string query = box.Text.Trim();
+
+            if (query.Length < 2)
+            {
+                refs.Popup.IsOpen = false;
+                return;
+            }
+
+            List<ProductSearchResult> results;
+
+            try
+            {
+                results = refs.SerialOnly
+                    ? HandoverSearchRepository.SearchBySerial(query)
+                    : HandoverSearchRepository.SearchGeneral(query);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Arama yapılamadı (teşhis):\n" + ex, "Hata",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                refs.Popup.IsOpen = false;
+                return;
+            }
+
+            if (results.Count == 0)
+            {
+                refs.Popup.IsOpen = false;
+                return;
+            }
+
+            refs.List.ItemsSource = results;
+            refs.Popup.IsOpen = true;
+        }
+
+        /// <summary>
+        /// Açılır listede bir ürüne tıklanınca çalışır. Popup StaysOpen="False" olduğu için
+        /// tıklama anında kapanmaya çalışır; bu yüzden PreviewMouseLeftButtonDown kullanılıyor,
+        /// böylece tıklanan öğe kaybolmadan önce yakalanmış oluyor.
+        /// </summary>
+        private void SuggestionsList_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            var listBox = (ListBox)sender;
+
+            var element = e.OriginalSource as DependencyObject;
+
+            while (element != null && !(element is ListBoxItem))
+            {
+                element = VisualTreeHelper.GetParent(element);
+            }
+
+            if (element == null)
+            {
+                return;
+            }
+
+            var result = listBox.ItemContainerGenerator.ItemFromContainer(element) as ProductSearchResult;
+            var box = listBox.Tag as TextBox;
+
+            if (result == null || box == null)
+            {
+                return;
+            }
+
+            ApplySelection(box, result);
+            e.Handled = true;
+        }
+
+        private void ApplySelection(TextBox box, ProductSearchResult result)
+        {
+            var refs = (AutoCompleteRefs)box.Tag;
+            var row = box.DataContext as HandoverItem;
+
+            if (row == null)
+            {
+                return;
+            }
+
+            row.SerialNo = result.SerialNo;
+            row.ItemType = result.TypeName;
+
+            refs.Popup.IsOpen = false;
+
+            ItemsGrid.CommitEdit(DataGridEditingUnit.Row, true);
+
+            if (Items.Count > 0 && Items[Items.Count - 1] == row)
+            {
+                Items.Add(new HandoverItem());
+            }
         }
 
         private void PrintButton_Click(object sender, RoutedEventArgs e)
@@ -239,13 +400,49 @@ namespace DepoStok
     }
 
     /// <summary>
-    /// Teslim-tesellüm tutanağındaki bir malzeme satırı.
+    /// Teslim-tesellüm tutanağındaki bir malzeme satırı. Arama sonucundan seçilince
+    /// hem tablodaki ilgili hücrelerin hem de o an düzenlenmekte olan hücrenin
+    /// anında güncellenebilmesi için değişiklik bildirimi yapar.
     /// </summary>
-    public class HandoverItem
+    public class HandoverItem : INotifyPropertyChanged
     {
-        public string SerialNo { get; set; }
-        public string ItemType { get; set; }
-        public string Quantity { get; set; }
-        public string Note { get; set; }
+        private string _serialNo;
+        private string _itemType;
+        private string _quantity;
+        private string _note;
+
+        public string SerialNo
+        {
+            get { return _serialNo; }
+            set { _serialNo = value; OnChanged("SerialNo"); }
+        }
+
+        public string ItemType
+        {
+            get { return _itemType; }
+            set { _itemType = value; OnChanged("ItemType"); }
+        }
+
+        public string Quantity
+        {
+            get { return _quantity; }
+            set { _quantity = value; OnChanged("Quantity"); }
+        }
+
+        public string Note
+        {
+            get { return _note; }
+            set { _note = value; OnChanged("Note"); }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnChanged(string propertyName)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
     }
 }

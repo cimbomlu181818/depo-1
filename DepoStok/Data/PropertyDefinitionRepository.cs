@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Globalization;
+using System.Linq;
 
 namespace DepoStok.Data
 {
@@ -56,6 +57,67 @@ namespace DepoStok.Data
     /// </summary>
     public static class PropertyDefinitionRepository
     {
+        /// <summary>Her zaman kütüphanede hazır bulunan, silinemeyen/adı değiştirilemeyen sabit alan adları.</summary>
+        public const string SerialNumberFieldName = "Seri Numara";
+        public const string SystemNameFieldName = "Sistem Adı";
+
+        /// <summary>
+        /// "Seri Numara" ve "Sistem Adı" alanları kütüphanede yoksa oluşturur.
+        /// Uygulama her açılışta çağrılır, zaten varsa hiçbir şey yapmaz.
+        /// </summary>
+        public static void EnsureDefaults()
+        {
+            using (var connection = Database.OpenConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText =
+                    "INSERT OR IGNORE INTO PropertyDefinitions (Name, DataType, IsSerialNumber) " +
+                    "VALUES (@n1, 'Text', 1);";
+                command.Parameters.AddWithValue("@n1", SerialNumberFieldName);
+                command.ExecuteNonQuery();
+            }
+
+            using (var connection = Database.OpenConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText =
+                    "INSERT OR IGNORE INTO PropertyDefinitions (Name, DataType, IsSerialNumber) " +
+                    "VALUES (@n2, 'Text', 0);";
+                command.Parameters.AddWithValue("@n2", SystemNameFieldName);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>Bu alan, kütüphaneden silinemeyen/adı değiştirilemeyen sabit alanlardan biri mi?</summary>
+        public static bool IsProtected(string name)
+        {
+            return name == SerialNumberFieldName || name == SystemNameFieldName;
+        }
+
+        /// <summary>
+        /// Ürünün kendi "Sistem Adı" alanına girilmiş değeri getirir. Boşsa ya da alan o
+        /// tipe hiç eklenmemişse, fallbackTypeName (genelde ürün tipinin adı) döner —
+        /// böylece ekranlarda hiçbir zaman boş bir isim görünmez.
+        /// </summary>
+        public static string GetSystemName(long productId, string fallbackTypeName)
+        {
+            using (var connection = Database.OpenConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText =
+                    "SELECT v.TextValue FROM ProductValues v " +
+                    "JOIN PropertyDefinitions d ON d.Id = v.PropertyId " +
+                    "WHERE v.ProductId = @productId AND d.Name = @fieldName " +
+                    "LIMIT 1;";
+                command.Parameters.AddWithValue("@productId", productId);
+                command.Parameters.AddWithValue("@fieldName", SystemNameFieldName);
+
+                object result = command.ExecuteScalar();
+                string value = result == null || result == DBNull.Value ? null : Convert.ToString(result);
+
+                return string.IsNullOrWhiteSpace(value) ? fallbackTypeName : value;
+            }
+        }
         /// <summary>
         /// Arşivde olmayan tüm alanları Türkçe alfabe sırasıyla verir.
         /// </summary>
@@ -166,6 +228,14 @@ namespace DepoStok.Data
         /// </summary>
         public static void Archive(long propertyId)
         {
+            var property = GetAll().FirstOrDefault(p => p.Id == propertyId);
+
+            if (property != null && IsProtected(property.Name))
+            {
+                throw new InvalidOperationException(
+                    "\"" + property.Name + "\" sistemin sabit bir alanıdır, kütüphaneden silinemez.");
+            }
+
             if (IsUsedByAnyType(propertyId))
             {
                 throw new InvalidOperationException(

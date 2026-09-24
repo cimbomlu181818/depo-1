@@ -48,6 +48,8 @@ namespace DepoStok.Data
                 command.CommandText = CreateTablesSql;
                 command.ExecuteNonQuery();
             }
+
+            PropertyDefinitionRepository.EnsureDefaults();
         }
 
         private const string CreateTablesSql = @"
