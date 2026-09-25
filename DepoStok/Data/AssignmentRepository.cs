@@ -18,6 +18,12 @@ namespace DepoStok.Data
         /// <summary>Ürün tipinin adı. Örnek: "Telsiz".</summary>
         public string TypeName { get; set; }
 
+        /// <summary>Ürünün "Sistem Adı" alanına girilmiş değeri (boşsa ürün tipinin adı).</summary>
+        public string SystemName { get; set; }
+
+        /// <summary>Ürünün gerçek seri numarası. Ürünün seri numarası yoksa boş/null olur.</summary>
+        public string SerialNumber { get; set; }
+
         /// <summary>Ürünü tanıyan kısa açıklama. Örnek: "Telsiz, Seri No: ABC123".</summary>
         public string ProductDescription { get; set; }
 
@@ -56,6 +62,33 @@ namespace DepoStok.Data
                 CultureInfo.InvariantCulture, DateTimeStyles.None, out time)
                 ? time.ToString("dd.MM.yyyy HH:mm:ss", Turkish)
                 : raw;
+        }
+
+        /// <summary>
+        /// Bir ürünün gerçek seri numarasını verir. Ürünün seri numarası yoksa null döner.
+        /// </summary>
+        private static string GetSerialNumberValue(SQLiteConnection connection, long productId)
+        {
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText =
+                    "SELECT v.TextValue " +
+                    "FROM ProductValues v " +
+                    "JOIN PropertyDefinitions d ON d.Id = v.PropertyId " +
+                    "WHERE v.ProductId = @productId AND d.IsSerialNumber = 1 " +
+                    "LIMIT 1;";
+                command.Parameters.AddWithValue("@productId", productId);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read() && !reader.IsDBNull(0))
+                    {
+                        return reader.GetString(0);
+                    }
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -163,6 +196,8 @@ namespace DepoStok.Data
                 foreach (var assignment in list)
                 {
                     assignment.ProductDescription = DescribeProduct(connection, assignment.ProductId, assignment.TypeName);
+                    assignment.SystemName = PropertyDefinitionRepository.GetSystemName(assignment.ProductId, assignment.TypeName);
+                    assignment.SerialNumber = GetSerialNumberValue(connection, assignment.ProductId);
                 }
             }
 
@@ -201,6 +236,8 @@ namespace DepoStok.Data
                 foreach (var assignment in list)
                 {
                     assignment.ProductDescription = DescribeProduct(connection, assignment.ProductId, assignment.TypeName);
+                    assignment.SystemName = PropertyDefinitionRepository.GetSystemName(assignment.ProductId, assignment.TypeName);
+                    assignment.SerialNumber = GetSerialNumberValue(connection, assignment.ProductId);
                 }
             }
 

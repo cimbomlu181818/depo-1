@@ -68,7 +68,13 @@ namespace DepoStok
             });
 
             AddField(document, "Ürün tipi", assignment.TypeName);
-            AddField(document, "Ürün", assignment.ProductDescription);
+            AddField(document, "Sistem adı", assignment.SystemName);
+
+            if (!string.IsNullOrEmpty(assignment.SerialNumber))
+            {
+                AddField(document, "Seri Numara", assignment.SerialNumber);
+            }
+
             AddField(document, "Miktar", assignment.Quantity.ToString(Turkish));
             AddField(document, "Zimmet tarihi", assignment.AssignedAtText);
 

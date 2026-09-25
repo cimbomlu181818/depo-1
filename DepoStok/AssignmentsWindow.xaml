@@ -47,15 +47,12 @@
                 <DataGridTextColumn Header="Ürün tipi"
                                     Binding="{Binding TypeName}"
                                     Width="110" />
-                <DataGridTextColumn Header="Ürün"
-                                    Binding="{Binding ProductDescription}"
-                                    Width="*">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="TextWrapping" Value="Wrap" />
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
+                <DataGridTextColumn Header="Sistem adı"
+                                    Binding="{Binding SystemName}"
+                                    Width="140" />
+                <DataGridTextColumn Header="Seri Numara"
+                                    Binding="{Binding SerialNumber}"
+                                    Width="120" />
                 <DataGridTextColumn Header="Miktar"
                                     Binding="{Binding Quantity}"
                                     Width="60" />

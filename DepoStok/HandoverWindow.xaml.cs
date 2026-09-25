@@ -301,7 +301,7 @@ namespace DepoStok
             var headerRow = new TableRow { Background = Brushes.LightGray };
             headerRow.Cells.Add(MakeCell("S.N", true));
             headerRow.Cells.Add(MakeCell("SERİ NO", true));
-            headerRow.Cells.Add(MakeCell("Malzemenin cinsi", true));
+            headerRow.Cells.Add(MakeCell("Sistem adı", true));
             headerRow.Cells.Add(MakeCell("Miktarı", true));
             headerRow.Cells.Add(MakeCell("DÜŞÜNCELER", true));
             rowGroup.Rows.Add(headerRow);

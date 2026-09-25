@@ -70,7 +70,8 @@ namespace DepoStok
                 var assignment = (Assignment)item;
 
                 return Contains(assignment.TypeName, text, turkish) ||
-                       Contains(assignment.ProductDescription, text, turkish) ||
+                       Contains(assignment.SystemName, text, turkish) ||
+                       Contains(assignment.SerialNumber, text, turkish) ||
                        Contains(assignment.PersonName, text, turkish) ||
                        Contains(assignment.RegistryNo, text, turkish) ||
                        Contains(assignment.Department, text, turkish);
