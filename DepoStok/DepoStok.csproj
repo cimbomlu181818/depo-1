@@ -89,6 +89,7 @@
     <Compile Include="Data\ProductImportRepository.cs" />
     <Compile Include="Data\ProductListRepository.cs" />
     <Compile Include="Data\ProductRepository.cs" />
+    <Compile Include="Data\ProductSearchRepository.cs" />
     <Compile Include="Data\PropertyDefinitionRepository.cs" />
     <Compile Include="Data\RecentProductsRepository.cs" />
     <Compile Include="Data\RenameRepository.cs" />

@@ -709,26 +709,72 @@ namespace DepoStok
         }
 
         /// <summary>
-        /// Ana sayfadaki kutuya yazılan seri numarasını tüm ürün tiplerinde arar.
-        /// Bulursa ürünün tipinin sayfasını açar ve seri numarasını o sayfanın arama kutusuna yazar.
-        /// Birden fazla eşleşme varsa tam eşleşen öne alınır.
+        /// Kutuya yazıldıkça (2 harften itibaren) çalışır: tüm ürün tiplerindeki
+        /// tüm alanlarda arama yapıp eşleşenleri kutunun altındaki listede gösterir.
+        /// </summary>
+        private void HomeSerialSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            string text = HomeSerialSearchBox.Text.Trim();
+
+            if (text.Length < 3)
+            {
+                HomeSearchResultsList.Visibility = Visibility.Collapsed;
+                HomeSearchResultsList.ItemsSource = null;
+                return;
+            }
+
+            List<HomeSearchResult> results;
+
+            try
+            {
+                results = ProductSearchRepository.Search(text);
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            HomeSearchResultsList.ItemsSource = results;
+            HomeSearchResultsList.Visibility = results.Count > 0
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Sonuç listesinde bir ürüne çift tıklanınca o ürünün tipinin sayfasını açar.
+        /// </summary>
+        private void HomeSearchResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            var result = HomeSearchResultsList.SelectedItem as HomeSearchResult;
+            if (result == null)
+            {
+                return;
+            }
+
+            OpenHomeSearchResult(result);
+        }
+
+        /// <summary>
+        /// Ana sayfadaki kutuya yazılan yazıyı tüm ürün tiplerindeki tüm alanlarda arar.
+        /// Bulursa ilk eşleşen ürünün tipinin sayfasını açar ve eşleşen yazıyı o sayfanın
+        /// arama kutusuna yazar. Birden fazla eşleşme varsa tam eşleşen öne alınır.
         /// </summary>
         private void SearchSerialFromHome()
         {
-            string serial = HomeSerialSearchBox.Text.Trim();
+            string text = HomeSerialSearchBox.Text.Trim();
 
-            if (serial.Length == 0)
+            if (text.Length == 0)
             {
-                MessageBox.Show("Lütfen aranacak seri numarasını yazın.", "Uyarı",
+                MessageBox.Show("Lütfen aranacak yazıyı girin.", "Uyarı",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            long? typeId;
+            List<HomeSearchResult> results;
 
             try
             {
-                typeId = SerialSearchRepository.FindTypeIdBySerial(serial);
+                results = ProductSearchRepository.Search(text);
             }
             catch (Exception ex)
             {
@@ -737,23 +783,36 @@ namespace DepoStok
                 return;
             }
 
-            ProductType type = null;
-
-            if (typeId.HasValue)
+            if (results.Count == 0)
             {
-                type = ProductTypeRepository.GetAll().FirstOrDefault(t => t.Id == typeId.Value);
-            }
-
-            if (type == null)
-            {
-                MessageBox.Show("Bu seri numarasını içeren ürün bulunamadı.", "Bilgi",
+                MessageBox.Show("Bu yazıyı içeren ürün bulunamadı.", "Bilgi",
                     MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
+            OpenHomeSearchResult(results[0]);
+        }
+
+        /// <summary>
+        /// Bulunan bir sonucu açar: ürünün tipinin sayfasına geçer ve eşleşen yazıyı
+        /// o sayfanın arama kutusuna yazar.
+        /// </summary>
+        private void OpenHomeSearchResult(HomeSearchResult result)
+        {
+            ProductType type = ProductTypeRepository.GetAll()
+                .FirstOrDefault(t => t.Id == result.ProductTypeId);
+
+            if (type == null)
+            {
+                return;
+            }
+
             HomeSerialSearchBox.Clear();
+            HomeSearchResultsList.Visibility = Visibility.Collapsed;
+            HomeSearchResultsList.ItemsSource = null;
+
             ShowTypePage(type);
-            TypeSerialSearchBox.Text = serial;
+            TypeSerialSearchBox.Text = result.MatchText;
         }
 
         // ---------- İŞLEM GEÇMİŞİ ----------
@@ -1640,7 +1699,7 @@ namespace DepoStok
             {
                 return;
             }
-/**/
+            /**/
             var addWindow = new AddProductWindow(_currentType);
             addWindow.Owner = this;
             addWindow.ShowDialog();

@@ -42,7 +42,7 @@
                                FontWeight="SemiBold"
                                Margin="0,0,0,5" />
 
-                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
                         <Button DockPanel.Dock="Right"
                                 Content="Ara"
                                 Width="50"
@@ -51,8 +51,16 @@
                         <TextBox x:Name="HomeSerialSearchBox"
                                  Height="28"
                                  VerticalContentAlignment="Center"
-                                 KeyDown="HomeSerialSearchBox_KeyDown" />
+                                 KeyDown="HomeSerialSearchBox_KeyDown"
+                                 TextChanged="HomeSerialSearchBox_TextChanged" />
                     </DockPanel>
+
+                    <ListBox x:Name="HomeSearchResultsList"
+                             DockPanel.Dock="Top"
+                             MaxHeight="180"
+                             Margin="0,0,0,12"
+                             Visibility="Collapsed"
+                             MouseDoubleClick="HomeSearchResultsList_MouseDoubleClick" />
 
                     <TextBlock DockPanel.Dock="Top"
                                Text="Ürün cinsleri (açmak için çift tıklayın)"
