@@ -61,11 +61,18 @@
                          Height="80"
                          Margin="0,0,0,8" />
 
-                <Button Content="Seçili tipi geri al"
-                        Height="30"
-                        Width="130"
-                        HorizontalAlignment="Left"
-                        Click="RestoreTypeButton_Click" />
+                <StackPanel DockPanel.Dock="Top"
+                            Orientation="Horizontal">
+                    <Button Content="Seçili tipi geri al"
+                            Height="30"
+                            Width="130"
+                            Click="RestoreTypeButton_Click" />
+                    <Button Content="Kalıcı olarak sil"
+                            Height="30"
+                            Width="130"
+                            Margin="8,0,0,0"
+                            Click="DeleteTypeButton_Click" />
+                </StackPanel>
 
             </DockPanel>
         </TabItem>
@@ -143,11 +150,18 @@
                          Height="70"
                          Margin="0,0,0,8" />
 
-                <Button Content="Seçili alanı geri al"
-                        Height="30"
-                        Width="130"
-                        HorizontalAlignment="Left"
-                        Click="RestorePropertyButton_Click" />
+                <StackPanel DockPanel.Dock="Top"
+                            Orientation="Horizontal">
+                    <Button Content="Seçili alanı geri al"
+                            Height="30"
+                            Width="130"
+                            Click="RestorePropertyButton_Click" />
+                    <Button Content="Kalıcı olarak sil"
+                            Height="30"
+                            Width="130"
+                            Margin="8,0,0,0"
+                            Click="DeletePropertyPermanentlyButton_Click" />
+                </StackPanel>
 
             </DockPanel>
         </TabItem>

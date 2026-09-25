@@ -177,6 +177,51 @@ namespace DepoStok
             RefreshAssignTab();
         }
 
+        /// <summary>
+        /// Arşivdeki listede seçili ürün tipini kalıcı olarak siler. Bu tipte (arşivde de
+        /// olsa) hâlâ ürün varsa engellenir; bu geri alınamaz bir işlemdir.
+        /// </summary>
+        private void DeleteTypeButton_Click(object sender, RoutedEventArgs e)
+        {
+            var type = ArchivedTypeList.SelectedItem as ProductType;
+
+            if (type == null)
+            {
+                ShowWarning("Listeden kalıcı olarak silinecek ürün tipini seçin.");
+                return;
+            }
+
+            MessageBoxResult answer = MessageBox.Show(
+                "\"" + type.Name + "\" tipi kalıcı olarak silinecek. Bu işlem geri alınamaz.\n\n" +
+                "Onaylıyor musunuz?",
+                "Onay", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (answer != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                ProductTypeRepository.Delete(type.Id);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ShowWarning(ex.Message);
+                return;
+            }
+            catch (Exception ex)
+            {
+                ShowError("Ürün tipi kalıcı olarak silinemedi:\n" + ex.Message);
+                return;
+            }
+
+            WriteLog("Ürün tipi kalıcı olarak silindi", "Ad: " + type.Name);
+
+            RefreshArchivedTypeList();
+            RefreshAssignTab();
+        }
+
         // ---------- ALAN KÜTÜPHANESİ SEKMESİ ----------
 
         private void AddPropertyButton_Click(object sender, RoutedEventArgs e)
@@ -312,6 +357,50 @@ namespace DepoStok
             WriteLog("Alan kütüphaneye geri alındı", "Ad: " + property.Name);
 
             RefreshPropertyList();
+            RefreshDeletedPropertyList();
+        }
+
+        /// <summary>
+        /// Silinmiş listede seçili alanı kütüphaneden kalıcı olarak siler. Herhangi bir
+        /// üründe bu alana değer girilmişse engellenir; bu geri alınamaz bir işlemdir.
+        /// </summary>
+        private void DeletePropertyPermanentlyButton_Click(object sender, RoutedEventArgs e)
+        {
+            var property = DeletedPropertyList.SelectedItem as PropertyDefinition;
+
+            if (property == null)
+            {
+                ShowWarning("Listeden kalıcı olarak silinecek alanı seçin.");
+                return;
+            }
+
+            MessageBoxResult answer = MessageBox.Show(
+                "\"" + property.Name + "\" alanı kalıcı olarak silinecek. Bu işlem geri alınamaz.\n\n" +
+                "Onaylıyor musunuz?",
+                "Onay", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (answer != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                PropertyDefinitionRepository.Delete(property.Id);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ShowWarning(ex.Message);
+                return;
+            }
+            catch (Exception ex)
+            {
+                ShowError("Alan kalıcı olarak silinemedi:\n" + ex.Message);
+                return;
+            }
+
+            WriteLog("Alan kütüphaneden kalıcı olarak silindi", "Ad: " + property.Name);
+
             RefreshDeletedPropertyList();
         }
 

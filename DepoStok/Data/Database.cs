@@ -131,6 +131,13 @@ CREATE INDEX IF NOT EXISTS IX_Assignments_Product
 
 CREATE INDEX IF NOT EXISTS IX_Assignments_Active
     ON Assignments (IsReturned, AssignedAt);
+
+CREATE TABLE IF NOT EXISTS HomeStatistics (
+    Id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    ProductTypeId  INTEGER NOT NULL REFERENCES ProductTypes(Id),
+    PropertyId     INTEGER NOT NULL REFERENCES PropertyDefinitions(Id),
+    SortOrder      INTEGER NOT NULL DEFAULT 0
+);
 ";
     }
 }

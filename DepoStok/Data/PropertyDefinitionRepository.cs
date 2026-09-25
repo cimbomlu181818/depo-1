@@ -254,6 +254,66 @@ namespace DepoStok.Data
             SetArchived(propertyId, 0);
         }
 
+        /// <summary>
+        /// Bu alana, herhangi bir üründe (arşivde/hurdada olsun olmasın) girilmiş kaç
+        /// değer olduğunu verir. Kalıcı silme öncesi bunun sıfır olması gerekir.
+        /// </summary>
+        public static int CountValues(long propertyId)
+        {
+            using (var connection = Database.OpenConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "SELECT COUNT(*) FROM ProductValues WHERE PropertyId = @id;";
+                command.Parameters.AddWithValue("@id", propertyId);
+                return Convert.ToInt32(command.ExecuteScalar());
+            }
+        }
+
+        /// <summary>
+        /// Silinmiş (arşivdeki) bir alanı kütüphaneden kalıcı olarak siler. Sabit alanlar
+        /// zaten arşivlenemediği için buraya gelmez; yine de savunma amaçlı kontrol edilir.
+        /// Herhangi bir üründe bu alana girilmiş değer varsa InvalidOperationException
+        /// fırlatılır. Bağlı ana sayfa istatistik kutuları da birlikte kaldırılır. Geri alınamaz.
+        /// </summary>
+        public static void Delete(long propertyId)
+        {
+            var property = GetArchived().FirstOrDefault(p => p.Id == propertyId);
+
+            if (property != null && IsProtected(property.Name))
+            {
+                throw new InvalidOperationException(
+                    "\"" + property.Name + "\" sistemin sabit bir alanıdır, kalıcı silinemez.");
+            }
+
+            if (CountValues(propertyId) > 0)
+            {
+                throw new InvalidOperationException(
+                    "Bu alana en az bir üründe değer girilmiş. Kalıcı silinemez.");
+            }
+
+            using (var connection = Database.OpenConnection())
+            using (var transaction = connection.BeginTransaction())
+            {
+                using (var command = connection.CreateCommand())
+                {
+                    command.Transaction = transaction;
+                    command.CommandText = "DELETE FROM HomeStatistics WHERE PropertyId = @id;";
+                    command.Parameters.AddWithValue("@id", propertyId);
+                    command.ExecuteNonQuery();
+                }
+
+                using (var command = connection.CreateCommand())
+                {
+                    command.Transaction = transaction;
+                    command.CommandText = "DELETE FROM PropertyDefinitions WHERE Id = @id;";
+                    command.Parameters.AddWithValue("@id", propertyId);
+                    command.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+            }
+        }
+
         private static void SetArchived(long propertyId, int archived)
         {
             using (var connection = Database.OpenConnection())

@@ -148,6 +148,66 @@ namespace DepoStok.Data
             SetArchived(id, 0);
         }
 
+        /// <summary>
+        /// Bu tipte, arşivde/hurdada olsun olmasın toplam kaç ürün kayıtlı olduğunu verir.
+        /// Kalıcı silme öncesi bunun sıfır olması gerekir.
+        /// </summary>
+        public static int CountAllProducts(long productTypeId)
+        {
+            using (var connection = Database.OpenConnection())
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = "SELECT COUNT(*) FROM Products WHERE ProductTypeId = @id;";
+                command.Parameters.AddWithValue("@id", productTypeId);
+                return Convert.ToInt32(command.ExecuteScalar());
+            }
+        }
+
+        /// <summary>
+        /// Arşivdeki bir ürün tipini kalıcı olarak siler. Bu tipte (arşivde ürünler dahil)
+        /// hâlâ kayıtlı ürün varsa InvalidOperationException fırlatılır ve hiçbir şey
+        /// silinmez. Tipin alan atamaları (TypeProperties) ve varsa bağlı ana sayfa
+        /// istatistik kutuları da birlikte kaldırılır. Geri alınamaz.
+        /// </summary>
+        public static void Delete(long id)
+        {
+            if (CountAllProducts(id) > 0)
+            {
+                throw new InvalidOperationException(
+                    "Bu tipte hâlâ kayıtlı ürün var. Kalıcı silmeden önce bu tipteki tüm ürünleri silin.");
+            }
+
+            using (var connection = Database.OpenConnection())
+            using (var transaction = connection.BeginTransaction())
+            {
+                using (var command = connection.CreateCommand())
+                {
+                    command.Transaction = transaction;
+                    command.CommandText = "DELETE FROM HomeStatistics WHERE ProductTypeId = @id;";
+                    command.Parameters.AddWithValue("@id", id);
+                    command.ExecuteNonQuery();
+                }
+
+                using (var command = connection.CreateCommand())
+                {
+                    command.Transaction = transaction;
+                    command.CommandText = "DELETE FROM TypeProperties WHERE ProductTypeId = @id;";
+                    command.Parameters.AddWithValue("@id", id);
+                    command.ExecuteNonQuery();
+                }
+
+                using (var command = connection.CreateCommand())
+                {
+                    command.Transaction = transaction;
+                    command.CommandText = "DELETE FROM ProductTypes WHERE Id = @id;";
+                    command.Parameters.AddWithValue("@id", id);
+                    command.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+            }
+        }
+
         private static void SetArchived(long id, int archived)
         {
             using (var connection = Database.OpenConnection())

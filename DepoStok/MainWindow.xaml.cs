@@ -64,6 +64,7 @@ namespace DepoStok
             HomePage.Visibility = Visibility.Visible;
             ProductTypeList.ItemsSource = ProductTypeRepository.GetAll();
             LoadRecentProducts();
+            LoadHomeStatistics();
         }
 
         /// <summary>
@@ -77,6 +78,188 @@ namespace DepoStok
             RecentEmptyText.Visibility = recent.Count == 0
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+        }
+
+        // ---------- ANA SAYFA İSTATİSTİK KUTULARI ----------
+
+        /// <summary>
+        /// İstatistik kutu boyutu: metin sığmazsa kutu içinde alt satıra kaydırılır (sabit boyut).
+        /// </summary>
+        private const double StatisticBoxWidth = 170;
+        private const double StatisticBoxHeight = 48;
+
+        /// <summary>
+        /// Kayıtlı istatistik kutularını veritabanından okur, sayılarını günceller ve
+        /// ana sayfaya (en sonda hep duran "+" kutusuyla birlikte) çizer.
+        /// </summary>
+        private void LoadHomeStatistics()
+        {
+            var cards = HomeStatisticsRepository.GetAll();
+
+            StatisticsPanel.Children.Clear();
+
+            foreach (var card in cards)
+            {
+                StatisticsPanel.Children.Add(BuildStatisticBox(card));
+            }
+
+            StatisticsPanel.Children.Add(BuildAddStatisticBox());
+        }
+
+        /// <summary>
+        /// Bir istatistik kutusunu oluşturur: "Ürün cinsi / Özellik: Sayı" yazısı ve
+        /// sağ alt köşede tıklanınca "Değiştir"/"Kaldır" menüsü açan küçük bir dişli.
+        /// Kutu küçük olduğu için taşan yazı kırpılır (kutunun dışına taşmaz).
+        /// </summary>
+        private Border BuildStatisticBox(HomeStatisticCard card)
+        {
+            var text = new TextBlock
+            {
+                Text = card.DisplayText,
+                TextWrapping = TextWrapping.Wrap,
+                FontWeight = FontWeights.SemiBold,
+                FontSize = 10
+            };
+
+            var gearButton = new Button
+            {
+                Content = "\u2699",
+                FontSize = 9,
+                Width = 16,
+                Height = 14,
+                Padding = new Thickness(0),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(0, 2, 0, 0),
+                Tag = card
+            };
+            gearButton.Click += StatisticGearButton_Click;
+
+            var grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(text, 0);
+            Grid.SetRow(gearButton, 1);
+            grid.Children.Add(text);
+            grid.Children.Add(gearButton);
+
+            return new Border
+            {
+                Width = StatisticBoxWidth,
+                Height = StatisticBoxHeight,
+                Background = Brushes.White,
+                BorderBrush = Brushes.LightGray,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(5),
+                Padding = new Thickness(5, 4, 5, 3),
+                Margin = new Thickness(0, 0, 6, 6),
+                ClipToBounds = true,
+                Child = grid
+            };
+        }
+
+        /// <summary>
+        /// Listenin en sonunda hep duran, "+" işaretli boş kutu. Tıklanınca yeni
+        /// istatistik ekleme akışını başlatır.
+        /// </summary>
+        private Border BuildAddStatisticBox()
+        {
+            var plus = new TextBlock
+            {
+                Text = "+",
+                FontSize = 20,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = Brushes.Gray,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            var addButton = new Button
+            {
+                Content = plus,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0)
+            };
+            addButton.Click += AddStatisticButton_Click;
+
+            return new Border
+            {
+                Width = StatisticBoxWidth,
+                Height = StatisticBoxHeight,
+                BorderBrush = Brushes.LightGray,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(5),
+                Margin = new Thickness(0, 0, 6, 6),
+                Child = addButton
+            };
+        }
+
+        /// <summary>
+        /// Dişli düğmesine tıklanınca "Değiştir" / "Kaldır" seçeneklerini gösteren küçük menü.
+        /// </summary>
+        private void StatisticGearButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            var card = button == null ? null : button.Tag as HomeStatisticCard;
+
+            if (button == null || card == null)
+            {
+                return;
+            }
+
+            var menu = new ContextMenu();
+
+            var changeItem = new MenuItem { Header = "Değiştir" };
+            changeItem.Click += (s, args) => ChangeStatistic(card);
+            menu.Items.Add(changeItem);
+
+            var removeItem = new MenuItem { Header = "Kaldır" };
+            removeItem.Click += (s, args) => RemoveStatistic(card);
+            menu.Items.Add(removeItem);
+
+            button.ContextMenu = menu;
+            menu.PlacementTarget = button;
+            menu.Placement = PlacementMode.Bottom;
+            menu.IsOpen = true;
+        }
+
+        /// <summary>
+        /// "+" kutusuna basılınca: ürün cinsi ve özellik seçtirir, seçilirse yeni kutu
+        /// kalıcı olarak eklenir.
+        /// </summary>
+        private void AddStatisticButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new AddStatisticWindow { Owner = this };
+
+            if (dialog.ShowDialog() == true)
+            {
+                HomeStatisticsRepository.Add(dialog.SelectedType.Id, dialog.SelectedProperty.Id);
+                LoadHomeStatistics();
+            }
+        }
+
+        /// <summary>
+        /// "Değiştir": aynı seçim akışını, kutunun şu anki ürün cinsi/özelliği önceden
+        /// işaretli olarak tekrar açar.
+        /// </summary>
+        private void ChangeStatistic(HomeStatisticCard card)
+        {
+            var dialog = new AddStatisticWindow(card.ProductTypeId, card.PropertyId) { Owner = this };
+
+            if (dialog.ShowDialog() == true)
+            {
+                HomeStatisticsRepository.Update(card.Id, dialog.SelectedType.Id, dialog.SelectedProperty.Id);
+                LoadHomeStatistics();
+            }
+        }
+
+        /// <summary>
+        /// "Kaldır": kutuyu kalıcı olarak siler.
+        /// </summary>
+        private void RemoveStatistic(HomeStatisticCard card)
+        {
+            HomeStatisticsRepository.Remove(card.Id);
+            LoadHomeStatistics();
         }
 
         /// <summary>
@@ -1834,4 +2017,4 @@ namespace DepoStok
             LoadProducts();
         }
     }
-}/**/
+}

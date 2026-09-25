@@ -89,7 +89,6 @@ namespace DepoStok
             {
                 _quantityBox = new TextBox
                 {
-                    Text = "1",
                     Height = 28,
                     VerticalContentAlignment = VerticalAlignment.Center
                 };
