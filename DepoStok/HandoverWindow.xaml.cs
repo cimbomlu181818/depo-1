@@ -255,9 +255,12 @@ namespace DepoStok
 
         private FlowDocument BuildDocument(List<HandoverItem> rows, double pageWidth)
         {
+            double effectivePageWidth = pageWidth > 0 ? pageWidth : 750;
+
             var document = new FlowDocument
             {
-                PageWidth = pageWidth > 0 ? pageWidth : 750,
+                PageWidth = effectivePageWidth,
+                ColumnWidth = effectivePageWidth,
                 FontSize = 11,
                 PagePadding = new Thickness(25)
             };
@@ -290,9 +293,10 @@ namespace DepoStok
             document.Blocks.Add(new Paragraph { Margin = new Thickness(0, 0, 0, 6) });
 
             var table = new Table();
-            for (int i = 0; i < 5; i++)
+            var columnWidths = new[] { 0.5, 1.5, 2.5, 1.0, 3.0 }; // S.N, Seri No, Sistem adı, Miktarı, Düşünceler
+            foreach (var w in columnWidths)
             {
-                table.Columns.Add(new TableColumn());
+                table.Columns.Add(new TableColumn { Width = new GridLength(w, GridUnitType.Star) });
             }
 
             var rowGroup = new TableRowGroup();
@@ -306,8 +310,7 @@ namespace DepoStok
             headerRow.Cells.Add(MakeCell("DÜŞÜNCELER", true));
             rowGroup.Rows.Add(headerRow);
 
-            // Örnekteki gibi en az 11 satır olacak şekilde, boş satırlar da çizgili basılır.
-            int lineCount = Math.Max(rows.Count, 11);
+            int lineCount = rows.Count;
 
             for (int i = 0; i < lineCount; i++)
             {
@@ -329,7 +332,7 @@ namespace DepoStok
             var signTable = new Table();
             for (int i = 0; i < 3; i++)
             {
-                signTable.Columns.Add(new TableColumn());
+                signTable.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) });
             }
 
             var signGroup = new TableRowGroup();
