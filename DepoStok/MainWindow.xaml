@@ -10,10 +10,15 @@
 
         <!-- ÜST MENÜ (her pencerede görünecek) -->
         <Menu DockPanel.Dock="Top" Padding="4">
-            <MenuItem Header="Ana Sayfa" Click="HomeMenu_Click" />
+            <MenuItem Click="HomeMenu_Click" ToolTip="Ana Sayfa">
+                <MenuItem.Header>
+                    <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="15" VerticalAlignment="Center" />
+                </MenuItem.Header>
+            </MenuItem>
             <MenuItem Header="Ayarlar" Click="SettingsMenu_Click" />
             <MenuItem Header="İşlem Geçmişi" Click="HistoryMenu_Click" />
             <MenuItem Header="Arşiv" Click="ArchiveMenu_Click" />
+            <MenuItem Header="Hurda Bölümü" Click="ScrapMenu_Click" />
             <MenuItem Header="Raporlar" Click="ReportMenu_Click" />
             <MenuItem Header="Zimmetler" Click="AssignmentsMenu_Click" />
             <MenuItem Header="Teslim-Tesellüm" Click="HandoverMenu_Click" />

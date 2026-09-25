@@ -954,6 +954,20 @@ namespace DepoStok
 
             RefreshCurrentTypeAndPage();
         }
+        // ---------- HURDA ----------
+
+        /// <summary>
+        /// Menüden Hurda Bölümü'ne tıklanınca hurdaya taşınan ürünlerin penceresini açar.
+        /// Pencere kapanınca, geri alınan ürünler görünsün diye açık sayfa yenilenir.
+        /// </summary>
+        private void ScrapMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var scrapWindow = new ScrapWindow();
+            scrapWindow.Owner = this;
+            scrapWindow.ShowDialog();
+
+            RefreshCurrentTypeAndPage();
+        }
 
         // ---------- RAPORLAR ----------
 
